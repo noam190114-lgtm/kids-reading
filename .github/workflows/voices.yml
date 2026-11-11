@@ -6,7 +6,7 @@ on:
       voices:
         description: "קולות: שם=מזהה:מין, מופרדים בפסיק"
         required: false
-        default: "דנית=s0T0DT6EAPeX57MQpn3I:female,איתמר=l7Q9rbdCC6j3J5dNlOOg:male,נמרוד=ZiofZHcEBTn5sRySe5h8:male,דוריאן=PBHwEnXdzx0yfhIO2UCH:male"
+        default: "שרה=EXAVITQu4vr4xnSDxMaL:female,לילי=pFZP5JQG7iQjIQuC4Bku:female,בריאן=nPczCjzI2devNBz1zQrb:male,צ׳רלי=IKne3meq5aSn9XLyUdCD:male"
       redo:
         description: "קולות ליצור מחדש מאפס (לא חובה)"
         required: false
