@@ -52,6 +52,21 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .voicebox>div{flex-basis:100%;color:var(--muted)}
 .voicebox select{font:inherit;font-size:15px;padding:4px 6px;border-radius:8px;border:1px solid #ccd;max-width:220px}
 .btn.small{font-size:16px;padding:6px 14px;border-radius:12px}
+.stabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.stab{background:#fff;border-radius:14px;padding:8px 12px;box-shadow:var(--shadow);font-weight:700;font-size:16px;display:flex;flex-direction:column;align-items:center}
+.stab small{color:var(--muted);font-weight:500}
+.stab.on{outline:3px solid var(--accent)}
+.rtext{font-size:22px;line-height:1.6;margin:8px 0}
+.recrow{display:flex;gap:14px;justify-content:center;align-items:center;margin:12px 0;flex-wrap:wrap}
+.recbtn{background:var(--bad);color:#fff;font-weight:800;font-size:26px;border-radius:999px;padding:16px 34px;box-shadow:0 6px 0 rgba(0,0,0,.18)}
+.recbtn.on{background:#2b2d42;animation:pulse 1s infinite}
+.nav{background:#fff;border-radius:50%;width:58px;height:58px;font-size:28px;box-shadow:var(--shadow)}
+.nav:disabled{opacity:.3}
+.okmark{color:var(--ok);font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{background:#fff;border-radius:12px;padding:6px 12px;font-size:20px;border:2px solid #eef0f6}
+.chip.has{border-color:var(--ok);background:#e7f8ef}
+.chip.on{outline:3px solid var(--accent)}
 .linkbtn{text-decoration:underline;color:var(--ink);font-weight:700}
 
 /* lesson */
@@ -185,6 +200,40 @@ function speak(t,rate){
   }catch(e){}
 }
 
+/* ---------- recorded narrator (a real human voice, saved on this device) ---------- */
+const CLIPS={};let DB=null,curAudio=null;
+function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('kids-reading-audio',1);r.onupgradeneeded=()=>r.result.createObjectStore('clips');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+async function loadClips(){
+  try{DB=await idb();const req=DB.transaction('clips').objectStore('clips').openCursor();
+    req.onsuccess=()=>{const c=req.result;if(c){CLIPS[c.key]=URL.createObjectURL(c.value);c.continue()}else render()}}catch(e){}
+}
+function putClip(k,blob){
+  if(CLIPS[k])URL.revokeObjectURL(CLIPS[k]);CLIPS[k]=URL.createObjectURL(blob);
+  try{DB&&DB.transaction('clips','readwrite').objectStore('clips').put(blob,k)}catch(e){}
+}
+function delClip(k){
+  if(CLIPS[k])URL.revokeObjectURL(CLIPS[k]);delete CLIPS[k];
+  try{DB&&DB.transaction('clips','readwrite').objectStore('clips').delete(k)}catch(e){}
+}
+const useRec=()=>P.narrator!=='tts';
+const hasClip=k=>useRec()&&!!CLIPS[k];
+const canSay=k=>hasClip(k)||!!heVoice;
+function stopAudio(){try{speechSynthesis.cancel()}catch(e){}if(curAudio){try{curAudio.pause()}catch(e){}curAudio=null}}
+function say(key,text,rate){
+  stopAudio();
+  if(hasClip(key)){curAudio=new Audio(CLIPS[key]);curAudio.play().catch(()=>{});return}
+  speak(text,rate);
+}
+const sylKey=(sound,L)=>'syl:'+SAY[sound](L);
+const wordKey=w=>'w:'+w;
+function studioItems(i){
+  const st=STAGES[i],items=[{k:'intro:'+i,t:st.intro,small:true,e:st.animal}];
+  if(st.sound)LETTERS.forEach(L=>items.push({k:sylKey(st.sound,L),t:st.vowels[0].f(L)}));
+  st.words.forEach(w=>items.push({k:wordKey(w[0]),t:w[0],e:w[1]}));
+  if(i===0)items.push({k:'praise',t:PRAISE[0],e:'🎉'});
+  return items;
+}
+
 /* ---------- helpers ---------- */
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -205,17 +254,19 @@ function totalStars(){return Object.values(P.stars).reduce((a,b)=>a+b,0)}
 function makeListen(){
   const st=STAGES[S.stage];
   if(!st.sound){ // shva stage: words
-    const pool=shuffle(st.words);const t=pool[0];
-    return {kind:'listen',say:t[0],answer:t[0],opts:shuffle([t[0],pool[1][0],pool[2][0]])};
+    const said=shuffle(st.words.filter(w=>canSay(wordKey(w[0]))));const t=said[0]||st.words[0];
+    const rest=shuffle(st.words.filter(w=>w!==t));
+    return {kind:'listen',say:t[0],key:wordKey(t[0]),answer:t[0],opts:shuffle([t[0],rest[0][0],rest[1][0]])};
   }
-  const v=rnd(st.vowels),L=rnd(LETTERS),target=v.f(L);
+  const sayable=LETTERS.filter(x=>canSay(sylKey(st.sound,x)));
+  const v=rnd(st.vowels),L=rnd(sayable.length?sayable:LETTERS),target=v.f(L);
   const learned=STAGES.slice(0,S.stage+1).filter(s=>s.sound);
   const cands=[];
   learned.forEach(s=>{if(s.sound!==st.sound)cands.push({t:rnd(s.vowels).f(L),k:L+s.sound})});
   shuffle(LETTERS.filter(x=>x!==L)).slice(0,3).forEach(x=>cands.push({t:rnd(st.vowels).f(x),k:x+st.sound}));
   const seen=new Set([L+st.sound]),d=[];
   for(const c of shuffle(cands)){if(!seen.has(c.k)){seen.add(c.k);d.push(c.t)}if(d.length===2)break}
-  return {kind:'listen',say:SAY[st.sound](L),answer:target,opts:shuffle([target,...d])};
+  return {kind:'listen',say:SAY[st.sound](L),key:sylKey(st.sound,L),answer:target,opts:shuffle([target,...d])};
 }
 function makeRead(){
   const cur=STAGES[S.stage].words,all=wordsUpTo(S.stage);
@@ -232,9 +283,14 @@ function makeBuild(used){
   const tiles=shuffle([...t[2],...extra]).map((s,i)=>({s,i,used:false}));
   return {kind:'build',word:t[0],emoji:t[1],syl:t[2],filled:0,tiles};
 }
+function listenPossible(){
+  if(heVoice)return true;
+  const st=STAGES[S.stage];
+  return st.sound?LETTERS.filter(x=>hasClip(sylKey(st.sound,x))).length>=3:st.words.filter(w=>hasClip(wordKey(w[0]))).length>=3;
+}
 function newRound(){
   const k=STEPS[S.step];
-  if(k==='listen')S.round=heVoice?makeListen():Object.assign(makeListen(),{kind:'match'});
+  if(k==='listen')S.round=listenPossible()?makeListen():Object.assign(makeListen(),{kind:'match'});
   else if(k==='read')S.round=makeRead();
   else if(k==='build'){S.usedBuild=S.usedBuild||[];S.round=makeBuild(S.usedBuild);S.usedBuild.push(S.round.word)}
   S.locked=false;
@@ -243,6 +299,7 @@ function newRound(){
 /* ---------- views ---------- */
 function render(){
   if(S.view==='map')return renderMap();
+  if(S.view==='studio')return renderStudio();
   const st=STAGES[S.stage],k=STEPS[S.step];
   let h=`<div class="top"><button class="iconbtn" data-a="home" aria-label="חזרה למפה">🏠</button><h1 class="heb">${st.animal} ${st.title}</h1><span class="pill">⭐ ${totalStars()}</span></div>`;
   h+=`<div class="steps">${STEPS.slice(0,4).map((s,i)=>`<span class="${i<S.step?'done':i===S.step?'on':''}"></span>`).join('')}</div>`;
@@ -264,25 +321,31 @@ function renderMap(){
   h+=`</div>
   <details class="parent"><summary>👨‍👩‍👧 פינת ההורים</summary>
   <p>סדר השלבים בנוי כמו בהוראת הקריאה בבית הספר: מתחילים בקמץ ופתח (צליל אַ), ואחריהם חיריק, חולם, צירי וסגול, שורוק וקובוץ, ובסוף שווא. בכל שלב יש היכרות עם התנועה ושלושה תרגולים: שמיעה, קריאת מילה והרכבת מילה מהברות.</p>
-  ${heVoice?`<div class="voicebox"><b>🔊 הקריין</b>
+  <div class="voicebox"><b>🎙️ קריין אנושי</b>
+    <div>הכי מדויק לילד שלומד לקרוא: <b>להקליט את הקול שלכם</b> (אבא, אמא, סבתא…). מקליטים פעם אחת כל הברה ומילה, והחיות מדברות בקול שלכם. ${Object.keys(CLIPS).length?`כבר הוקלטו ${Object.keys(CLIPS).length} קטעים.`:''}</div>
+    <button class="btn small" data-a="studio">🎙️ פתח את חדר ההקלטות</button>
+    <label>מי מקריא: <select data-c="narrator"><option value="rec" ${useRec()?'selected':''}>הקול המוקלט שלנו (ומה שלא הוקלט – קול המכשיר)</option><option value="tts" ${!useRec()?'selected':''}>רק קול המכשיר</option></select></label>
+  </div>
+  ${heVoice?`<div class="voicebox"><b>🔊 קול המכשיר</b>
     <label>קול: <select data-c="voice">${HE_VOICES.map(v=>`<option value="${esc(v.name)}" ${v===heVoice?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>
     <label>גובה: <select data-c="pitch">${[['1','רגיל'],['1.15','חמים'],['1.3','גבוה (כמו דמות מצוירת)']].map(([v,l])=>`<option value="${v}" ${String(P.pitch||1.15)===v?'selected':''}>${l}</option>`).join('')}</select></label>
     <label>מהירות: <select data-c="speed"><option value="normal" ${P.speed!=='slow'?'selected':''}>רגילה</option><option value="slow" ${P.speed==='slow'?'selected':''}>איטית</option></select></label>
     <button class="btn ghost small" data-a="testvoice">נסה ▶</button>
     <div>${HE_VOICES.some(v=>/natural|neural|online|premium|enhanced/i.test(v.name))?'✅ נמצא קול איכותי במכשיר והוא נבחר אוטומטית.':'💡 לקול הכי אנושי: פתחו את המשחק בדפדפן <b>Microsoft Edge</b> ובחרו "Hila Online (Natural)". באייפון/מק: הגדרות ← נגישות ← תוכן מוקרא ← קולות ← עברית, הורידו את "כרמית (משופר)".'}</div></div>`
-  :'<p>🔇 לא נמצא במכשיר הזה קול עברי, לכן אין הקראה, ובמקום משחק השמיעה יש משחק התאמה. לקול הכי אנושי פתחו את המשחק בדפדפן Microsoft Edge.</p>'}
+  :'<p>🔇 לא נמצא במכשיר הזה קול עברי. מה שתקליטו בחדר ההקלטות יושמע; בלי הקלטות, במקום משחק השמיעה יש משחק התאמה.</p>'}
   <p>ההתקדמות נשמרת בדפדפן הזה. <button class="linkbtn" data-a="unlock">לפתוח את כל השלבים</button> · <button class="linkbtn" data-a="reset">להתחיל מחדש</button></p></details>`;
   app.innerHTML=h;
 }
 function renderLearn(st){
-  let h=`<div class="guide"><div class="ani">${st.animal}</div><div class="bubble heb">${heVoice?`<button class="speak say" data-a="sayintro" aria-label="הקרא">🔊</button>`:''}${esc(st.intro)}</div></div>`;
+  let h=`<div class="guide"><div class="ani">${st.animal}</div><div class="bubble heb">${canSay('intro:'+S.stage)?`<button class="speak say" data-a="sayintro" aria-label="הקרא">🔊</button>`:''}${esc(st.intro)}</div></div>`;
   h+=`<div class="panel"><div class="vowels">${st.vowels.map(v=>`<div class="vowel heb" style="background:${st.color}"><div class="mark">${v.f('מ')}</div><div class="vn">${v.n}</div><div class="vh">${v.h}</div></div>`).join('')}</div></div>`;
   if(st.sound){
-    h+=`<div class="panel"><p class="q heb">${heVoice?'לְחַץ עַל הַבְרָה וְתִשְׁמַע אוֹתָהּ:':'קְרָא אֶת הַהֲבָרוֹת:'}</p>`;
-    st.vowels.forEach(v=>{h+=`<div class="grid heb" style="margin-bottom:10px">${LETTERS.slice(0,6).map(L=>`<button class="tile" data-a="saysyl" data-t="${esc(SAY[st.sound](L))}">${v.f(L)}</button>`).join('')}</div>`});
+    const any=LETTERS.slice(0,6).some(L=>canSay(sylKey(st.sound,L)));
+    h+=`<div class="panel"><p class="q heb">${any?'לְחַץ עַל הַבְרָה וְתִשְׁמַע אוֹתָהּ:':'קְרָא אֶת הַהֲבָרוֹת:'}</p>`;
+    st.vowels.forEach(v=>{h+=`<div class="grid heb" style="margin-bottom:10px">${LETTERS.slice(0,6).map(L=>`<button class="tile" data-a="sayk" data-k="${esc(sylKey(st.sound,L))}" data-t="${esc(SAY[st.sound](L))}">${v.f(L)}</button>`).join('')}</div>`});
     h+=`</div>`;
   }else{
-    h+=`<div class="panel"><p class="q heb">הַשְּׁוָא צָבוּעַ בְּוָרֹד. ${heVoice?'לְחַץ וְתִשְׁמַע:':''}</p><div class="wordrow heb">${st.words.slice(0,6).map(w=>`<button class="wordcard" data-a="sayword" data-t="${esc(w[0])}"><div class="e">${w[1]}</div><div class="w">${hiShva(w[0])}</div></button>`).join('')}</div></div>`;
+    h+=`<div class="panel"><p class="q heb">הַשְּׁוָא צָבוּעַ בְּוָרֹד. ${st.words.slice(0,6).some(w=>canSay(wordKey(w[0])))?'לְחַץ וְתִשְׁמַע:':''}</p><div class="wordrow heb">${st.words.slice(0,6).map(w=>`<button class="wordcard" data-a="sayk" data-k="${esc(wordKey(w[0]))}" data-t="${esc(w[0])}"><div class="e">${w[1]}</div><div class="w">${hiShva(w[0])}</div></button>`).join('')}</div></div>`;
   }
   h+=`<div class="center"><button class="btn" data-a="next">יאללה מתרגלים! ▶</button></div>`;
   return h;
@@ -301,7 +364,7 @@ function renderGame(st,k){
     h+=`<div class="opts">${r.opts.map(o=>`<button class="opt e" data-a="pick" data-v="${esc(o)}">${o}</button>`).join('')}</div>`;
   }else if(r.kind==='build'){
     h+=`<p class="q heb">בְּנֵה אֶת הַמִּלָּה – לְחַץ עַל הַהֲבָרוֹת לְפִי הַסֵּדֶר (מִיָּמִין לִשְׂמֹאל):</p><div class="emoji">${r.emoji}</div>`;
-    if(heVoice)h+=`<div class="center"><button class="speak" data-a="replay" aria-label="השמע">🔊</button></div>`;
+    if(canSay(wordKey(r.word)))h+=`<div class="center"><button class="speak" data-a="replay" aria-label="השמע">🔊</button></div>`;
     h+=`<div class="slots heb">${r.syl.map((s,i)=>`<div class="slot ${i<r.filled?'f':''}">${i<r.filled?esc(s):''}</div>`).join('')}</div>`;
     h+=`<div class="tiles heb">${r.tiles.map(t=>`<button class="tile ${t.used?'used':''}" data-a="tile" data-i="${t.i}">${esc(t.s)}</button>`).join('')}</div>`;
   }
@@ -319,6 +382,50 @@ function renderDone(st){
   <button class="btn ghost" data-a="again">עוֹד פַּעַם 🔁</button><button class="btn ghost" data-a="home">לַמַּפָּה 🗺️</button></div></div>`;
 }
 
+/* ---------- recording studio ---------- */
+const REC={stream:null,mr:null,chunks:[],on:false,err:''};
+function renderStudio(){
+  const items=studioItems(S.sStage),it=items[S.sIdx],done=items.filter(x=>CLIPS[x.k]).length;
+  let h=`<div class="top"><button class="iconbtn" data-a="home" aria-label="חזרה">🏠</button><h1>🎙️ חדר ההקלטות</h1></div>
+  <p class="sub">מקליטים את הקול שלכם, והחיות ידברו בו. דברו <b>ברור ולאט, בחדר שקט</b>, והגו את ההברה בדיוק כמו שכתובה (למשל "מָ" = "מָה"). כדאי להקליט על הטאבלט שהילד משחק בו, כי ההקלטות נשמרות במכשיר שעליו הקלטתם.</p>
+  <div class="stabs">${STAGES.map((s,i)=>{const its=studioItems(i),d=its.filter(x=>CLIPS[x.k]).length;return `<button class="stab ${i===S.sStage?'on':''}" data-a="sstage" data-i="${i}">${s.animal} שלב ${i+1}<small>${d}/${its.length}</small></button>`}).join('')}</div>
+  <div class="panel center">
+    <div class="prog" style="margin-bottom:6px">פריט ${S.sIdx+1} מתוך ${items.length} · הוקלטו ${done}</div>
+    ${it.e?`<div style="font-size:54px">${it.e}</div>`:''}
+    <div class="heb ${it.small?'rtext':'target'}">${S.sStage===5&&!it.small?hiShva(it.t):esc(it.t)}</div>
+    ${it.k.startsWith('syl:')?`<div class="note heb">לְהַגִּיד: ${esc(it.k.slice(4))}</div>`:''}
+    <div class="recrow">
+      <button class="nav" data-a="sprev" ${S.sIdx===0?'disabled':''} aria-label="הקודם">→</button>
+      <button class="recbtn ${REC.on?'on':''}" data-a="rec">${REC.on?'⏹ עצור':'🔴 הקלט'}</button>
+      <button class="nav" data-a="snext" ${S.sIdx===items.length-1?'disabled':''} aria-label="הבא">←</button>
+    </div>
+    <div class="recrow">
+      ${CLIPS[it.k]?`<button class="btn ghost small" data-a="splay">▶ השמע</button><button class="btn ghost small" data-a="sdel">🗑 מחק</button><span class="okmark">✓ מוקלט</span>`:'<span class="note">עוד לא הוקלט</span>'}
+    </div>
+    ${REC.err?`<p class="try heb" style="color:var(--bad)">${esc(REC.err)}</p>`:''}
+  </div>
+  <div class="chips heb">${items.map((x,i)=>`<button class="chip ${i===S.sIdx?'on':''} ${CLIPS[x.k]?'has':''}" data-a="sjump" data-i="${i}">${x.small?x.e+' פתיח':esc(x.t)}</button>`).join('')}</div>`;
+  app.innerHTML=h;
+}
+async function toggleRec(){
+  if(REC.on){try{REC.mr.stop()}catch(e){}return}
+  REC.err='';
+  try{
+    if(!REC.stream)REC.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    const it=studioItems(S.sStage)[S.sIdx];
+    REC.chunks=[];REC.mr=new MediaRecorder(REC.stream);
+    REC.mr.ondataavailable=e=>{if(e.data&&e.data.size)REC.chunks.push(e.data)};
+    REC.mr.onstop=()=>{
+      REC.on=false;const blob=new Blob(REC.chunks,{type:REC.mr.mimeType||'audio/webm'});
+      if(blob.size>800){putClip(it.k,blob);stopAudio();curAudio=new Audio(CLIPS[it.k]);curAudio.play().catch(()=>{})}
+      render();
+    };
+    REC.mr.start();REC.on=true;stopAudio();render();
+  }catch(e){
+    REC.on=false;REC.err='לא הצלחתי להפעיל את המיקרופון. צריך לאשר גישה למיקרופון בדפדפן (ולפתוח את המשחק מהקישור הרגיל, לא מתוך צ׳אט).';render();
+  }
+}
+
 /* ---------- flow ---------- */
 function openStage(i){S.view='stage';S.stage=i;S.step=0;S.q=0;S.mistakes=0;S.usedBuild=[];render()}
 function nextStep(){
@@ -327,11 +434,11 @@ function nextStep(){
     const s=S.mistakes<=2?3:S.mistakes<=6?2:1;
     P.stars[S.stage]=Math.max(P.stars[S.stage]||0,s);
     if(P.unlocked<S.stage+2)P.unlocked=Math.min(STAGES.length,S.stage+2);
-    save();render();confetti();speak(PRAISE[0]);return;
+    save();render();confetti();say('praise',PRAISE[0]);return;
   }
   newRound();render();autoSay();
 }
-function autoSay(){const r=S.round;if(!r)return;if(r.kind==='listen')setTimeout(()=>speak(r.say),350)}
+function autoSay(){const r=S.round;if(!r)return;if(r.kind==='listen')setTimeout(()=>say(r.key,r.say),350)}
 function feedback(ok){
   const fb=document.getElementById('fb');if(!fb)return;
   fb.className='feedback heb '+(ok?'good':'try');fb.textContent=ok?rnd(PRAISE):rnd(TRY);
@@ -345,27 +452,37 @@ function advance(){
 app.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
   const a=b.dataset.a;
-  if(a==='home'){S.view='map';try{speechSynthesis.cancel()}catch(x){}render();return}
+  if(a==='home'){if(REC.on)return;S.view='map';stopAudio();render();return}
+  if(a==='studio'){S.view='studio';S.sStage=S.sStage||0;S.sIdx=0;REC.err='';render();return}
+  if(a==='rec'){toggleRec();return}
+  if(REC.on)return;
+  if(a==='sstage'){S.sStage=+b.dataset.i;S.sIdx=0;render();return}
+  if(a==='sjump'){S.sIdx=+b.dataset.i;render();return}
+  if(a==='sprev'){if(S.sIdx>0)S.sIdx--;render();return}
+  if(a==='snext'){if(S.sIdx<studioItems(S.sStage).length-1)S.sIdx++;render();return}
+  if(a==='splay'){const k=studioItems(S.sStage)[S.sIdx].k;stopAudio();if(CLIPS[k]){curAudio=new Audio(CLIPS[k]);curAudio.play().catch(()=>{})}return}
+  if(a==='sdel'){delClip(studioItems(S.sStage)[S.sIdx].k);render();return}
+  if(a==='sayk'){say(b.dataset.k,b.dataset.t);b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),400);return}
   if(a==='open'){const i=+b.dataset.i;if(i+1<=P.unlocked)openStage(i);return}
   if(a==='unlock'){P.unlocked=STAGES.length;save();render();return}
   if(a==='reset'){P={unlocked:1,stars:{}};save();render();return}
   if(a==='testvoice'){speak('שָׁלוֹם! אֲנִי אַרְנָבִי. בּוֹא נִקְרָא יַחַד: אַבָּא, סַבָּא, גַּמָּל!',.9);return}
-  if(a==='sayintro'){speak(STAGES[S.stage].intro,.9);return}
+  if(a==='sayintro'){say('intro:'+S.stage,STAGES[S.stage].intro,.9);return}
   if(a==='saysyl'||a==='sayword'){speak(b.dataset.t);b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),400);return}
   if(a==='next'){nextStep();return}
   if(a==='nextstage'){openStage(S.stage+1);return}
   if(a==='again'){openStage(S.stage);return}
   const r=S.round;if(!r)return;
-  if(a==='replay'){speak(r.kind==='build'?r.word:r.say);return}
+  if(a==='replay'){if(r.kind==='build')say(wordKey(r.word),r.word);else say(r.key,r.say);return}
   if(a==='pick'){
     if(S.locked)return;
     if(b.dataset.v===r.answer){
       S.locked=true;b.classList.add('ok');feedback(true);
-      if(r.kind==='read')speak(r.word);
+      if(r.kind==='read')say(wordKey(r.word),r.word);
       setTimeout(advance,1100);
     }else{
       S.mistakes++;b.classList.remove('bad');void b.offsetWidth;b.classList.add('bad');feedback(false);
-      if(r.kind==='listen')setTimeout(()=>speak(r.say),500);
+      if(r.kind==='listen')setTimeout(()=>say(r.key,r.say),500);
     }
     return;
   }
@@ -374,7 +491,7 @@ app.addEventListener('click',e=>{
     const t=r.tiles[+b.dataset.i];if(t.used)return;
     if(t.s===r.syl[r.filled]){
       t.used=true;r.filled++;
-      if(r.filled===r.syl.length){S.locked=true;render();feedback(true);speak(r.word);setTimeout(advance,1400)}
+      if(r.filled===r.syl.length){S.locked=true;render();feedback(true);say(wordKey(r.word),r.word);setTimeout(advance,1400)}
       else render();
     }else{
       S.mistakes++;b.classList.remove('bad');void b.offsetWidth;b.classList.add('bad');feedback(false);
@@ -386,9 +503,11 @@ app.addEventListener('change',e=>{
   if(c==='voice'){P.voice=e.target.value;pickVoice()}
   if(c==='pitch')P.pitch=parseFloat(e.target.value);
   if(c==='speed')P.speed=e.target.value;
+  if(c==='narrator'){P.narrator=e.target.value;save();render();return}
   save();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);
 });
 render();
+loadClips();
 if(location.protocol==='https:'&&/github\.io$/.test(location.hostname)){try{navigator.serviceWorker&&navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
 </script>
 </body>
