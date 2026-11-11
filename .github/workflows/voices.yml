@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       voices:
-        description: "שמות הקולות מ-ElevenLabs, מופרדים בפסיק (ריק = 4 הקולות הראשונים בחשבון)"
+        description: "קולות: שם=מזהה:מין, מופרדים בפסיק"
         required: false
-        default: ""
+        default: "דנית=s0T0DT6EAPeX57MQpn3I:female,איתמר=l7Q9rbdCC6j3J5dNlOOg:male,נמרוד=ZiofZHcEBTn5sRySe5h8:male,דוריאן=PBHwEnXdzx0yfhIO2UCH:male"
       redo:
         description: "קולות ליצור מחדש מאפס (לא חובה)"
         required: false

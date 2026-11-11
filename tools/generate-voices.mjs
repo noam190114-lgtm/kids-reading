@@ -18,7 +18,6 @@ const items = JSON.parse(fs.readFileSync('audio/items.json', 'utf8'));
 const manifestPath = 'audio/voices.json';
 const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : { voices: [] };
 
-const slugify = s => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'voice';
 const fileFor = k => crypto.createHash('sha1').update(k).digest('hex').slice(0, 12) + '.mp3';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -41,23 +40,33 @@ async function tts(voiceId, text) {
     if (r.status === 429 || r.status >= 500) { await sleep(2000 * attempt); continue; }
     if (useLang && /language/i.test(body)) { useLang = false; continue; }
     if (/quota|credits/i.test(body)) throw new Error('Out of ElevenLabs credits for this month: ' + body);
+    if (/voice_not_found|not found/i.test(body)) throw new Error('Voice not available to this API key. Add it to "My Voices" in ElevenLabs (Voice Library → Add) and run again. ' + body);
     throw new Error(`TTS failed (${r.status}): ${body}`);
   }
   throw new Error('TTS kept failing after retries');
 }
 
-const all = await listVoices();
-console.log('Voices in your ElevenLabs account:', all.map(v => v.name).join(', '));
-const chosen = WANT.length ? WANT.map(n => {
-  const v = all.find(x => x.name.toLowerCase() === n.toLowerCase()) || all.find(x => x.name.toLowerCase().startsWith(n.toLowerCase()));
-  if (!v) console.warn(`Voice "${n}" not found in your account – skipped.`);
-  return v;
-}).filter(Boolean) : all.slice(0, 4);
+// VOICES entries: "Name=VOICE_ID:gender" (gender optional), a bare VOICE_ID, or a voice name from your account.
+let all = [];
+try { all = await listVoices(); console.log('Voices in your ElevenLabs account:', all.map(v => v.name).join(', ')); }
+catch (e) { console.warn(e.message); }
+const isId = x => /^[A-Za-z0-9]{20}$/.test(x);
+const chosen = (WANT.length ? WANT : all.slice(0, 4).map(v => v.voice_id)).map(entry => {
+  let [name, rest] = entry.includes('=') ? entry.split('=') : [null, entry];
+  let [id, gender] = (rest || '').split(':');
+  if (!isId(id)) {
+    const v = all.find(x => x.name.toLowerCase() === id.toLowerCase()) || all.find(x => x.name.toLowerCase().startsWith(id.toLowerCase()));
+    if (!v) { console.warn(`Voice "${entry}" not found – skipped.`); return null; }
+    return { voice_id: v.voice_id, name: name || v.name, labels: { gender: gender || v.labels?.gender } };
+  }
+  const v = all.find(x => x.voice_id === id);
+  return { voice_id: id, name: name || v?.name || id, labels: { gender: gender || v?.labels?.gender || '' } };
+}).filter(Boolean);
 
 let made = 0;
 for (const v of chosen) {
   const name = v.name.split(/\s+-\s+|\s*\(/)[0].trim();
-  const slug = slugify(name) + '-' + v.voice_id.slice(0, 4).toLowerCase();
+  const slug = 'v-' + v.voice_id.slice(0, 8).toLowerCase();
   const dir = path.join('audio', slug);
   if (REDO.some(n => n.toLowerCase() === name.toLowerCase())) fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
