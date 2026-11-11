@@ -40,6 +40,7 @@ async function tts(voiceId, text) {
     if (r.status === 429 || r.status >= 500) { await sleep(2000 * attempt); continue; }
     if (useLang && /language/i.test(body)) { useLang = false; continue; }
     if (/quota|credits/i.test(body)) throw new Error('Out of ElevenLabs credits for this month: ' + body);
+    if (r.status === 402 || /paid_plan_required/i.test(body)) { const e = new Error('Free plan cannot use this library voice via the API (needs a paid plan): ' + voiceId); e.skipVoice = true; throw e; }
     if (/voice_not_found|not found/i.test(body)) throw new Error('Voice not available to this API key. Add it to "My Voices" in ElevenLabs (Voice Library → Add) and run again. ' + body);
     throw new Error(`TTS failed (${r.status}): ${body}`);
   }
@@ -73,16 +74,21 @@ for (const v of chosen) {
   let entry = manifest.voices.find(x => x.slug === slug);
   if (!entry) { entry = { slug, name, gender: v.labels?.gender || '', files: {} }; manifest.voices.push(entry); }
   entry.files = {};
+  let skip = false;
   for (const it of items) {
     const f = path.join(dir, fileFor(it.key));
     if (!fs.existsSync(f)) {
-      fs.writeFileSync(f, await tts(v.voice_id, it.text));
+      let audio;
+      try { audio = await tts(v.voice_id, it.text); }
+      catch (e) { if (e.skipVoice) { console.warn(`${name}: ${e.message}`); skip = true; break; } throw e; }
+      fs.writeFileSync(f, audio);
       made++;
       console.log(`${name}: ${it.key}`);
       await sleep(250);
     }
     entry.files[it.key] = `${slug}/${path.basename(f)}`;
   }
+  if (skip) { manifest.voices = manifest.voices.filter(x => x !== entry); fs.rmSync(dir, { recursive: true, force: true }); }
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 1));
 }
 console.log(`Done. ${made} new audio files.`);
