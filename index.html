@@ -227,13 +227,25 @@ const activeRec=()=>{const id=String(P.narrator).startsWith('rec:')?P.narrator.s
 const ck=(id,k)=>id+'|'+k;
 const clipFor=(k,id)=>id?(CLIPS[ck(id,k)]||(id==='v1'?CLIPS[k]:undefined)):undefined;
 const voiceCount=id=>Object.keys(CLIPS).filter(k=>k.startsWith(id+'|')||(id==='v1'&&!k.includes('|'))).length;
-const useRec=()=>!!activeRec();
-const hasClip=k=>!!clipFor(k,activeRec());
+let AIV=[];
+const activeAI=()=>String(P.narrator).startsWith('ai:')?AIV.find(v=>v.slug===P.narrator.slice(3))||null:null;
+const useRec=()=>!!activeRec()||!!activeAI();
+function clipUrl(k){const ai=activeAI();if(ai)return ai.files[k]?'audio/'+ai.files[k]:undefined;return clipFor(k,activeRec())}
+const hasClip=k=>!!clipUrl(k);
+const gIcon=g=>/female/i.test(g)?'👩':/male/i.test(g)?'👨':'🗣️';
+function preloadAI(){const ai=activeAI();if(!ai)return;Object.values(ai.files).forEach((f,i)=>setTimeout(()=>{try{fetch('audio/'+f).catch(()=>{})}catch(e){}},i*40))}
+async function loadAI(){
+  try{const r=await fetch('audio/voices.json',{cache:'no-cache'});if(!r.ok)return;const m=await r.json();AIV=(m.voices||[]).filter(v=>v.files&&Object.keys(v.files).length);
+    if(AIV.length&&!P.narratorSet){P.narrator='ai:'+AIV[0].slug;save()}
+    if(String(P.narrator).startsWith('ai:')&&!activeAI()&&AIV.length)P.narrator='ai:'+AIV[0].slug;
+    preloadAI();render();
+  }catch(e){}
+}
 const canSay=k=>hasClip(k)||!!heVoice;
 function stopAudio(){try{speechSynthesis.cancel()}catch(e){}if(curAudio){try{curAudio.pause()}catch(e){}curAudio=null}}
 function say(key,text,rate){
   stopAudio();
-  if(hasClip(key)){curAudio=new Audio(clipFor(key,activeRec()));curAudio.play().catch(()=>{});return}
+  if(hasClip(key)){curAudio=new Audio(clipUrl(key));curAudio.play().catch(()=>{});return}
   speak(text,rate);
 }
 const sylKey=(sound,L)=>'syl:'+SAY[sound](L);
@@ -333,14 +345,16 @@ function renderMap(){
   h+=`</div>
   <details class="parent"><summary>👨‍👩‍👧 פינת ההורים</summary>
   <p>סדר השלבים בנוי כמו בהוראת הקריאה בבית הספר: מתחילים בקמץ ופתח (צליל אַ), ואחריהם חיריק, חולם, צירי וסגול, שורוק וקובוץ, ובסוף שווא. בכל שלב יש היכרות עם התנועה ושלושה תרגולים: שמיעה, קריאת מילה והרכבת מילה מהברות.</p>
-  <div class="voicebox"><b>🎙️ קריין אנושי</b>
+  <div class="voicebox"><b>🎙️ הקריין</b>
     <div>הכי מדויק לילד שלומד לקרוא: <b>להקליט את הקול שלכם</b> (אבא, אמא, סבתא…). מקליטים פעם אחת כל הברה ומילה, והחיות מדברות בקול שלכם. ${Object.keys(CLIPS).length?`כבר הוקלטו ${Object.keys(CLIPS).length} קטעים.`:''}</div>
     <button class="btn small" data-a="studio">🎙️ פתח את חדר ההקלטות</button>
     <label>מי מקריא: <select data-c="narrator">
-      <optgroup label="קולות מוקלטים">${P.voices.map(v=>`<option value="rec:${v.id}" ${P.narrator==='rec:'+v.id?'selected':''}>🎙️ ${esc(v.name)} (${voiceCount(v.id)} הקלטות)</option>`).join('')}</optgroup>
+      ${AIV.length?`<optgroup label="קריינים מקצועיים">${AIV.map(v=>`<option value="ai:${v.slug}" ${P.narrator==='ai:'+v.slug?'selected':''}>${gIcon(v.gender)} ${esc(v.name)}</option>`).join('')}</optgroup>`:''}
+      <optgroup label="קולות שהקלטתם">${P.voices.map(v=>`<option value="rec:${v.id}" ${P.narrator==='rec:'+v.id?'selected':''}>🎙️ ${esc(v.name)} (${voiceCount(v.id)} הקלטות)</option>`).join('')}</optgroup>
       ${HE_VOICES.length?`<optgroup label="קולות המכשיר">${HE_VOICES.map(v=>`<option value="tts:${esc(v.name)}" ${!useRec()&&v===heVoice?'selected':''}>🔊 ${esc(v.name)}</option>`).join('')}</optgroup>`:''}
     </select></label>
-    <div>מה שעוד לא הוקלט בקול שנבחר – יושמע בקול המכשיר.</div>
+    <button class="btn ghost small" data-a="testnarr">נסה ▶</button>
+    <div>מה שחסר בקול שנבחר יושמע בקול המכשיר.</div>
   </div>
   ${heVoice?`<div class="voicebox"><b>🔊 קול המכשיר</b>
     <label>קול: <select data-c="voice">${HE_VOICES.map(v=>`<option value="${esc(v.name)}" ${v===heVoice?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>
@@ -485,7 +499,7 @@ app.addEventListener('click',e=>{
   if(a==='sdel'){const k=studioItems(S.sStage)[S.sIdx].k;delClip(ck(S.sVoice,k));if(S.sVoice==='v1')delClip(k);render();return}
   if(a==='svoice'){S.sVoice=b.dataset.id;S.confirmDel=null;render();return}
   if(a==='addvoice'){const inp=document.getElementById('newvoice');const name=(inp&&inp.value||'').trim();if(!name){inp&&inp.focus();return}
-    const id='v'+Date.now().toString(36);P.voices.push({id,name});S.sVoice=id;P.narrator='rec:'+id;save();render();return}
+    const id='v'+Date.now().toString(36);P.voices.push({id,name});S.sVoice=id;P.narrator='rec:'+id;P.narratorSet=true;save();render();return}
   if(a==='delvoice'){const id=S.sVoice;if(S.confirmDel!==id){S.confirmDel=id;render();return}
     Object.keys(CLIPS).filter(k=>k.startsWith(id+'|')||(id==='v1'&&!k.includes('|'))).forEach(delClip);
     P.voices=P.voices.filter(v=>v.id!==id);if(P.narrator==='rec:'+id)P.narrator='rec:'+P.voices[0].id;S.sVoice=P.voices[0].id;S.confirmDel=null;save();render();return}
@@ -493,6 +507,7 @@ app.addEventListener('click',e=>{
   if(a==='open'){const i=+b.dataset.i;if(i+1<=P.unlocked)openStage(i);return}
   if(a==='unlock'){P.unlocked=STAGES.length;save();render();return}
   if(a==='reset'){P={unlocked:1,stars:{}};save();render();return}
+  if(a==='testnarr'){say('intro:0',STAGES[0].intro,.9);return}
   if(a==='testvoice'){speak('שָׁלוֹם! אֲנִי אַרְנָבִי. בּוֹא נִקְרָא יַחַד: אַבָּא, סַבָּא, גַּמָּל!',.9);return}
   if(a==='sayintro'){say('intro:'+S.stage,STAGES[S.stage].intro,.9);return}
   if(a==='saysyl'||a==='sayword'){speak(b.dataset.t);b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),400);return}
@@ -530,11 +545,12 @@ app.addEventListener('change',e=>{
   if(c==='voice'){P.voice=e.target.value;pickVoice()}
   if(c==='pitch')P.pitch=parseFloat(e.target.value);
   if(c==='speed')P.speed=e.target.value;
-  if(c==='narrator'){const v=e.target.value;if(v.startsWith('tts:')){P.narrator='tts';P.voice=v.slice(4);pickVoice();save();render();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);return}P.narrator=v;save();render();return}
+  if(c==='narrator'){const v=e.target.value;P.narratorSet=true;if(v.startsWith('tts:')){P.narrator='tts';P.voice=v.slice(4);pickVoice();save();render();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);return}P.narrator=v;save();render();preloadAI();say('praise',PRAISE[0]);return}
   save();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);
 });
 render();
 loadClips();
+loadAI();
 if(location.protocol==='https:'&&/github\.io$/.test(location.hostname)){try{navigator.serviceWorker&&navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
 </script>
 </body>
