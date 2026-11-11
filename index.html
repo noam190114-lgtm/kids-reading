@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>קוראים עם החברים</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#ff8a5b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="קוראים">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;600;800&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#fff6e5; --bg2:#e6f4ff; --ink:#2b2d42; --muted:#6b7086;
+  --ok:#2bb673; --bad:#ef5b5b; --card:#ffffff; --shadow:0 6px 0 rgba(43,45,66,.12);
+  --accent:#ff8a5b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Rubik","Noto Sans Hebrew",Arial,sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg2),var(--bg1) 70%);min-height:100vh;
+}
+.heb{font-family:"Noto Sans Hebrew","Arial Hebrew",Arial,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+#app{max-width:860px;margin:0 auto;padding:16px 16px 48px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.top h1{font-size:clamp(22px,4.5vw,34px);margin:0;flex:1;font-weight:800}
+.pill{background:var(--card);border-radius:999px;padding:8px 16px;box-shadow:var(--shadow);font-weight:700;font-size:18px}
+.iconbtn{background:var(--card);width:52px;height:52px;border-radius:16px;box-shadow:var(--shadow);font-size:26px;display:grid;place-items:center}
+.iconbtn:active,.btn:active,.opt:active,.tile:active,.stage:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(43,45,66,.12)}
+
+/* map */
+.sub{color:var(--muted);margin:0 0 18px;font-size:18px}
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.stage{background:var(--card);border-radius:24px;padding:18px;box-shadow:var(--shadow);text-align:right;display:flex;gap:14px;align-items:center;position:relative;border:4px solid transparent}
+.stage .ani{font-size:56px;line-height:1;width:76px;height:76px;border-radius:20px;display:grid;place-items:center}
+.stage .num{font-size:15px;color:var(--muted);font-weight:700}
+.stage .ttl{font-size:26px;font-weight:800;margin:2px 0}
+.stage .stars{font-size:20px;letter-spacing:2px}
+.stage.locked{opacity:.55;filter:grayscale(.7)}
+.stage.locked::after{content:"🔒";position:absolute;left:14px;top:12px;font-size:24px}
+.stage.next{border-color:var(--accent);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{transform:scale(1.02)}}
+.parent{margin-top:28px;background:rgba(255,255,255,.7);border-radius:18px;padding:14px 18px;color:var(--muted);font-size:15px;line-height:1.6}
+.parent summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.voicebox{background:#fff;border-radius:14px;padding:12px 14px;margin:10px 0;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;color:var(--ink)}
+.voicebox>div{flex-basis:100%;color:var(--muted)}
+.voicebox select{font:inherit;font-size:15px;padding:4px 6px;border-radius:8px;border:1px solid #ccd;max-width:220px}
+.btn.small{font-size:16px;padding:6px 14px;border-radius:12px}
+.linkbtn{text-decoration:underline;color:var(--ink);font-weight:700}
+
+/* lesson */
+.guide{display:flex;gap:14px;align-items:flex-start;margin:6px 0 18px}
+.guide .ani{font-size:72px;line-height:1;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) rotate(-3deg)}}
+.bubble{background:var(--card);border-radius:22px;padding:14px 18px;box-shadow:var(--shadow);font-size:21px;line-height:1.5;position:relative;flex:1}
+.bubble::before{content:"";position:absolute;right:-12px;top:22px;border:12px solid transparent;border-left-color:var(--card);border-right:0}
+.bubble .say{float:left;margin-right:8px}
+.panel{background:var(--card);border-radius:24px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+.vowels{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.vowel{border-radius:20px;padding:10px 18px;text-align:center;min-width:150px}
+.vowel .mark{font-size:84px;line-height:1.15;font-weight:800}
+.vowel .vn{font-size:22px;font-weight:800}
+.vowel .vh{font-size:16px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+@media (max-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
+.tile{background:#fff;border-radius:18px;box-shadow:var(--shadow);font-size:clamp(34px,7vw,50px);font-weight:800;padding:8px 0;border:3px solid #eef0f6;line-height:1.35}
+.tile.flash{background:#fff3c4}
+.wordrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.wordcard{background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:10px 16px;border:3px solid #eef0f6;text-align:center}
+.wordcard .e{font-size:40px}
+.wordcard .w{font-size:36px;font-weight:800}
+.shva{color:#e0457b}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;font-weight:800;font-size:24px;border-radius:20px;padding:14px 28px;box-shadow:0 6px 0 rgba(0,0,0,.18)}
+.btn.ghost{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.center{text-align:center}
+.steps{display:flex;gap:8px;justify-content:center;margin:0 0 14px}
+.steps span{width:46px;height:10px;border-radius:9px;background:#d9dceb}
+.steps span.on{background:var(--accent)}
+.steps span.done{background:var(--ok)}
+
+/* games */
+.q{font-size:24px;font-weight:700;text-align:center;margin:4px 0 14px}
+.prog{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+.prog i{width:14px;height:14px;border-radius:50%;background:#d9dceb;display:block}
+.prog i.d{background:var(--ok)}
+.prog i.c{background:var(--accent)}
+.target{font-size:clamp(70px,16vw,120px);font-weight:800;text-align:center;line-height:1.25;margin:4px 0 10px}
+.emoji{font-size:clamp(80px,18vw,120px);text-align:center;line-height:1.1}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px}
+.opt{background:#fff;border-radius:22px;box-shadow:var(--shadow);border:4px solid #eef0f6;font-size:clamp(46px,10vw,70px);font-weight:800;padding:12px 0;line-height:1.3}
+.opt.e{font-size:clamp(56px,12vw,84px)}
+.opt.ok,.tile.ok{border-color:var(--ok);background:#e7f8ef}
+.opt.bad,.tile.bad{border-color:var(--bad);background:#fdeaea;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.slots{display:flex;gap:10px;justify-content:center;margin:8px 0 16px;flex-wrap:wrap}
+.slot{min-width:92px;height:96px;border-radius:18px;border:4px dashed #c9cde0;display:grid;place-items:center;font-size:clamp(40px,9vw,58px);font-weight:800;background:rgba(255,255,255,.6)}
+.slot.f{border-style:solid;border-color:var(--ok);background:#e7f8ef}
+.tiles{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.tiles .tile{min-width:96px;padding:8px 14px}
+.tile.used{visibility:hidden}
+.feedback{min-height:40px;text-align:center;font-size:26px;font-weight:800;margin-top:14px}
+.feedback.good{color:var(--ok)}
+.feedback.try{color:var(--bad)}
+.speak{background:#fff;border-radius:50%;width:64px;height:64px;font-size:30px;box-shadow:var(--shadow);display:inline-grid;place-items:center}
+.speak.big{width:96px;height:96px;font-size:46px}
+.done-ani{font-size:110px;animation:bob 1.6s infinite}
+.bigstars{font-size:64px;letter-spacing:6px}
+.confetti{position:fixed;top:-40px;font-size:30px;pointer-events:none;animation:fall linear forwards;z-index:9}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+.note{font-size:15px;color:var(--muted);text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+/* ---------- data ---------- */
+const LETTERS=['מ','ל','ס','נ','ר','ד','בּ','ת','שׁ','פּ','ג','ז'];
+const SAY={a:L=>L+'ָה',i:L=>L+'ִי',o:L=>L+'וֹ',e:L=>L+'ֶה',u:L=>L+'וּ'};
+const STAGES=[
+ {animal:'🐰',guide:'ארנבי',title:'קָמַץ וּפַתַח',sound:'a',color:'#ffd9c7',
+  intro:'שָׁלוֹם! אֲנִי אַרְנָבִי. הַקָּמַץ וְהַפַּתַח הֵם חֲבֵרִים טוֹבִים – שְׁנֵיהֶם אוֹמְרִים אַ, כְּמוֹ בַּמִּלָּה אַבָּא!',
+  vowels:[{n:'קָמַץ',f:L=>L+'ָ',h:'קַו עִם רֶגֶל קְטַנָּה'},{n:'פַּתַח',f:L=>L+'ַ',h:'קַו יָשָׁר'}],
+  words:[['אַבָּא','👨',['אַ','בָּא']],['סַבָּא','👴',['סַ','בָּא']],['גַּמָּל','🐫',['גַּ','מָּל']],['דָּג','🐟',['דָּג']],['יָד','✋',['יָד']],['כַּף','🥄',['כַּף']],['סַל','🧺',['סַל']],['נָחָשׁ','🐍',['נָ','חָשׁ']],['מַפָּה','🗺️',['מַ','פָּה']],['בָּנָנָה','🍌',['בָּ','נָ','נָה']],['יָם','🌊',['יָם']]]},
+ {animal:'🦉',guide:'ינשופי',title:'חִירִיק',sound:'i',color:'#e3dcff',
+  intro:'הוּ הוּ! אֲנִי יַנְשׁוּפִי. הַחִירִיק הוּא נְקֻדָּה אַחַת מִתַּחַת לָאוֹת, וְהוּא אוֹמֵר אִי – כְּמוֹ בַּמִּלָּה פִּיל!',
+  vowels:[{n:'חִירִיק',f:L=>L+'ִ',h:'נְקֻדָּה אַחַת לְמַטָּה'},{n:'חִירִיק מָלֵא',f:L=>L+'ִי',h:'נְקֻדָּה וְאַחֲרֶיהָ י'}],
+  words:[['פִּיל','🐘',['פִּיל']],['תִּירָס','🌽',['תִּי','רָס']],['אִמָּא','👩',['אִ','מָּא']],['מִטָּה','🛏️',['מִ','טָּה']],['גִּיטָרָה','🎸',['גִּי','טָ','רָה']],['סִיר','🍲',['סִיר']],['שִׁנַּיִם','🦷',['שִׁ','נַּ','יִם']],['פִּיצָה','🍕',['פִּי','צָה']]]},
+ {animal:'🐼',guide:'פנדי',title:'חוֹלָם',sound:'o',color:'#dff3e4',
+  intro:'הַיּוֹ! אֲנִי פַּנְדִּי. הַחוֹלָם הוּא נְקֻדָּה לְמַעְלָה, וְהוּא אוֹמֵר אוֹ – כְּמוֹ בַּמִּלָּה יוֹנָה!',
+  vowels:[{n:'חוֹלָם מָלֵא',f:L=>L+'וֹ',h:'ו עִם נְקֻדָּה עַל הָרֹאשׁ'},{n:'חוֹלָם חָסֵר',f:L=>L+'ֹ',h:'נְקֻדָּה לְמַעְלָה'}],
+  words:[['צִפּוֹר','🐦',['צִ','פּוֹר']],['יוֹנָה','🕊️',['יוֹ','נָה']],['תּוֹף','🥁',['תּוֹף']],['כּוֹבַע','🎩',['כּוֹ','בַע']],['שׁוֹקוֹלָד','🍫',['שׁוֹ','קוֹ','לָד']],['בַּלּוֹן','🎈',['בַּ','לּוֹן']],['מוֹנִית','🚕',['מוֹ','נִית']],['חַלּוֹן','🪟',['חַ','לּוֹן']]]},
+ {animal:'🐘',guide:'פילי',title:'צֵירֵי וּסֶגּוֹל',sound:'e',color:'#d9eefc',
+  intro:'טְרוּ טְרוּ! אֲנִי פִּילִי. הַצֵּירֵי וְהַסֶּגּוֹל אוֹמְרִים אֶ – כְּמוֹ בַּמִּלָּה עֵץ!',
+  vowels:[{n:'צֵירֵי',f:L=>L+'ֵ',h:'שְׁתֵּי נְקֻדּוֹת שׁוֹכְבוֹת'},{n:'סֶגּוֹל',f:L=>L+'ֶ',h:'שָׁלוֹשׁ נְקֻדּוֹת כְּמוֹ מְשֻׁלָּשׁ'}],
+  words:[['עֵץ','🌳',['עֵץ']],['כִּסֵּא','🪑',['כִּ','סֵּא']],['בֵּיצָה','🥚',['בֵּי','צָה']],['כֶּלֶב','🐕',['כֶּ','לֶב']],['סֵפֶר','📖',['סֵ','פֶר']],['גֶּשֶׁם','🌧️',['גֶּ','שֶׁם']],['שֶׁמֶשׁ','☀️',['שֶׁ','מֶשׁ']],['דֶּלֶת','🚪',['דֶּ','לֶת']],['לֶחֶם','🍞',['לֶ','חֶם']]]},
+ {animal:'🐢',guide:'צבי',title:'שׁוּרוּק וְקֻבּוּץ',sound:'u',color:'#fff1bf',
+  intro:'שָׁלוֹם, אֲנִי צְבִי הַצָּב. הַשּׁוּרוּק וְהַקֻּבּוּץ אוֹמְרִים אוּ – כְּמוֹ בַּמִּלָּה סוּס!',
+  vowels:[{n:'שׁוּרוּק',f:L=>L+'וּ',h:'ו עִם נְקֻדָּה בַּבֶּטֶן'},{n:'קֻבּוּץ',f:L=>L+'ֻ',h:'שָׁלוֹשׁ נְקֻדּוֹת בַּאֲלַכְסוֹן'}],
+  words:[['סוּס','🐴',['סוּס']],['חָתוּל','🐈',['חָ','תוּל']],['תַּפּוּחַ','🍎',['תַּ','פּוּ','חַ']],['כַּדּוּר','⚽',['כַּ','דּוּר']],['קוּף','🐒',['קוּף']],['שׁוּעָל','🦊',['שׁוּ','עָל']],['דֻּבִּי','🧸',['דֻּ','בִּי']],['אוֹטוֹבּוּס','🚌',['אוֹ','טוֹ','בּוּס']]]},
+ {animal:'🦁',guide:'אריק',title:'שְׁוָא',sound:null,color:'#ffe0ec',
+  intro:'רוֹאָר! אֲנִי אֲרִיק הָאַרְיֵה. הַשְּׁוָא הוּא שְׁתֵּי נְקֻדּוֹת עוֹמְדוֹת. לִפְעָמִים הוּא שָׁקֵט, וְלִפְעָמִים הוּא אוֹמֵר אֶ קְצָרָה – כְּמוֹ בַּמִּלָּה אַרְנָב!',
+  vowels:[{n:'שְׁוָא',f:L=>L+'ְ',h:'שְׁתֵּי נְקֻדּוֹת עוֹמְדוֹת'}],
+  words:[['אַרְנָב','🐇',['אַרְ','נָב']],['נְמָלָה','🐜',['נְ','מָ','לָה']],['סַבְתָּא','👵',['סַבְ','תָּא']],['מַזְלֵג','🍴',['מַזְ','לֵג']],['צְפַרְדֵּעַ','🐸',['צְ','פַרְ','דֵּ','עַ']],['תַּרְנְגוֹל','🐓',['תַּרְ','נְ','גוֹל']],['פַּרְפַּר','🦋',['פַּרְ','פַּר']],['דְּבוֹרָה','🐝',['דְּ','בוֹ','רָה']]]}
+];
+const PRAISE=['כָּל הַכָּבוֹד!','מְעֻלֶּה!','אַלּוּף!','יוֹפִי!','נִהְדָּר!','אֵיזֶה קוֹרֵא!'];
+const TRY=['כִּמְעַט! נַסֵּה שׁוּב 🙂','לֹא נוֹרָא, עוֹד פַּעַם!'];
+
+/* ---------- storage (optional) ---------- */
+const KEY='kids-reading-v1';
+let P={unlocked:1,stars:{}};
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.unlocked)P=s}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}}
+
+/* ---------- speech ---------- */
+let heVoice=null,HE_VOICES=[];
+function voiceScore(v){
+  let s=0;const n=v.name||'';
+  if(/natural|neural|online/i.test(n))s+=10;   // Edge: "Hila Online (Natural)" – the most human-sounding
+  if(/premium|enhanced|siri/i.test(n))s+=8;    // Apple high-quality voices
+  if(/google/i.test(n))s+=4;
+  if(/hila|הילה|carmit|כרמית/i.test(n))s+=2;   // softer female voices tend to suit kids
+  return s;
+}
+function pickVoice(){
+  try{
+    HE_VOICES=speechSynthesis.getVoices().filter(x=>/^he|^iw/i.test(x.lang)).sort((a,b)=>voiceScore(b)-voiceScore(a));
+    heVoice=HE_VOICES.find(v=>v.name===P.voice)||HE_VOICES[0]||null;
+  }catch(e){heVoice=null;HE_VOICES=[]}
+}
+try{pickVoice();speechSynthesis.onvoiceschanged=()=>{const n=HE_VOICES.length;pickVoice();if(HE_VOICES.length!==n&&S.view==='map')render()}}catch(e){}
+function speak(t,rate){
+  if(!heVoice)return;
+  try{
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.voice=heVoice;u.lang=heVoice.lang;
+    const slow=P.speed==='slow'?.85:1;
+    u.rate=(rate||.85)*slow;u.pitch=P.pitch||1.15;   // slightly higher & slower = friendlier for kids
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- helpers ---------- */
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function wordsUpTo(n){let w=[];for(let i=0;i<=n;i++)w=w.concat(STAGES[i].words);return w}
+function hiShva(w){return esc(w).replace(/([א-ת][ּׁׂ]*ְ)/g,'<span class="shva">$1</span>')}
+function confetti(){const e=['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<22;i++){const d=document.createElement('div');d.className='confetti';d.textContent=rnd(e);d.style.left=Math.random()*100+'vw';d.style.animationDuration=(1.6+Math.random()*1.6)+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),3400)}}
+
+/* ---------- state ---------- */
+const S={view:'map',stage:0,step:0,q:0,mistakes:0,round:null};
+const STEPS=['learn','listen','read','build','done'];
+const COUNTS={listen:6,read:6,build:4};
+const app=document.getElementById('app');
+
+function totalStars(){return Object.values(P.stars).reduce((a,b)=>a+b,0)}
+
+/* ---------- rounds ---------- */
+function makeListen(){
+  const st=STAGES[S.stage];
+  if(!st.sound){ // shva stage: words
+    const pool=shuffle(st.words);const t=pool[0];
+    return {kind:'listen',say:t[0],answer:t[0],opts:shuffle([t[0],pool[1][0],pool[2][0]])};
+  }
+  const v=rnd(st.vowels),L=rnd(LETTERS),target=v.f(L);
+  const learned=STAGES.slice(0,S.stage+1).filter(s=>s.sound);
+  const cands=[];
+  learned.forEach(s=>{if(s.sound!==st.sound)cands.push({t:rnd(s.vowels).f(L),k:L+s.sound})});
+  shuffle(LETTERS.filter(x=>x!==L)).slice(0,3).forEach(x=>cands.push({t:rnd(st.vowels).f(x),k:x+st.sound}));
+  const seen=new Set([L+st.sound]),d=[];
+  for(const c of shuffle(cands)){if(!seen.has(c.k)){seen.add(c.k);d.push(c.t)}if(d.length===2)break}
+  return {kind:'listen',say:SAY[st.sound](L),answer:target,opts:shuffle([target,...d])};
+}
+function makeRead(){
+  const cur=STAGES[S.stage].words,all=wordsUpTo(S.stage);
+  const t=Math.random()<.75?rnd(cur):rnd(all);
+  const others=shuffle(all.filter(w=>w[1]!==t[1])).slice(0,2);
+  return {kind:'read',word:t[0],answer:t[1],opts:shuffle([t[1],...others.map(o=>o[1])])};
+}
+function makeBuild(used){
+  const st=STAGES[S.stage];
+  let pool=st.words.filter(w=>w[2].length>1&&!used.includes(w[0]));
+  if(!pool.length)pool=st.words.filter(w=>w[2].length>1);
+  const t=rnd(pool);
+  const extra=shuffle(wordsUpTo(S.stage).flatMap(w=>w[2]).filter(s=>!t[2].includes(s))).filter((s,i,a)=>a.indexOf(s)===i).slice(0,2);
+  const tiles=shuffle([...t[2],...extra]).map((s,i)=>({s,i,used:false}));
+  return {kind:'build',word:t[0],emoji:t[1],syl:t[2],filled:0,tiles};
+}
+function newRound(){
+  const k=STEPS[S.step];
+  if(k==='listen')S.round=heVoice?makeListen():Object.assign(makeListen(),{kind:'match'});
+  else if(k==='read')S.round=makeRead();
+  else if(k==='build'){S.usedBuild=S.usedBuild||[];S.round=makeBuild(S.usedBuild);S.usedBuild.push(S.round.word)}
+  S.locked=false;
+}
+
+/* ---------- views ---------- */
+function render(){
+  if(S.view==='map')return renderMap();
+  const st=STAGES[S.stage],k=STEPS[S.step];
+  let h=`<div class="top"><button class="iconbtn" data-a="home" aria-label="חזרה למפה">🏠</button><h1 class="heb">${st.animal} ${st.title}</h1><span class="pill">⭐ ${totalStars()}</span></div>`;
+  h+=`<div class="steps">${STEPS.slice(0,4).map((s,i)=>`<span class="${i<S.step?'done':i===S.step?'on':''}"></span>`).join('')}</div>`;
+  if(k==='learn')h+=renderLearn(st);
+  else if(k==='done')h+=renderDone(st);
+  else h+=renderGame(st,k);
+  app.innerHTML=h;
+}
+function renderMap(){
+  let h=`<div class="top"><h1>📚 קוראים עם החברים</h1><span class="pill">⭐ ${totalStars()}</span></div>
+  <p class="sub heb">בְּכָל שָׁלָב חָבֵר אֶחָד מְלַמֵּד תְּנוּעָה חֲדָשָׁה. בּוֹא נִתְחִיל!</p><div class="map">`;
+  STAGES.forEach((s,i)=>{
+    const lock=i+1>P.unlocked,stars=P.stars[i]||0,next=i+1===P.unlocked&&!P.stars[i];
+    h+=`<button class="stage ${lock?'locked':''} ${next?'next':''}" data-a="open" data-i="${i}" ${lock?'aria-disabled="true"':''}>
+      <div class="ani" style="background:${s.color}">${s.animal}</div>
+      <div><div class="num">שלב ${i+1} · ${s.guide}</div><div class="ttl heb">${s.title}</div>
+      <div class="stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div></div></button>`;
+  });
+  h+=`</div>
+  <details class="parent"><summary>👨‍👩‍👧 פינת ההורים</summary>
+  <p>סדר השלבים בנוי כמו בהוראת הקריאה בבית הספר: מתחילים בקמץ ופתח (צליל אַ), ואחריהם חיריק, חולם, צירי וסגול, שורוק וקובוץ, ובסוף שווא. בכל שלב יש היכרות עם התנועה ושלושה תרגולים: שמיעה, קריאת מילה והרכבת מילה מהברות.</p>
+  ${heVoice?`<div class="voicebox"><b>🔊 הקריין</b>
+    <label>קול: <select data-c="voice">${HE_VOICES.map(v=>`<option value="${esc(v.name)}" ${v===heVoice?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>
+    <label>גובה: <select data-c="pitch">${[['1','רגיל'],['1.15','חמים'],['1.3','גבוה (כמו דמות מצוירת)']].map(([v,l])=>`<option value="${v}" ${String(P.pitch||1.15)===v?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label>מהירות: <select data-c="speed"><option value="normal" ${P.speed!=='slow'?'selected':''}>רגילה</option><option value="slow" ${P.speed==='slow'?'selected':''}>איטית</option></select></label>
+    <button class="btn ghost small" data-a="testvoice">נסה ▶</button>
+    <div>${HE_VOICES.some(v=>/natural|neural|online|premium|enhanced/i.test(v.name))?'✅ נמצא קול איכותי במכשיר והוא נבחר אוטומטית.':'💡 לקול הכי אנושי: פתחו את המשחק בדפדפן <b>Microsoft Edge</b> ובחרו "Hila Online (Natural)". באייפון/מק: הגדרות ← נגישות ← תוכן מוקרא ← קולות ← עברית, הורידו את "כרמית (משופר)".'}</div></div>`
+  :'<p>🔇 לא נמצא במכשיר הזה קול עברי, לכן אין הקראה, ובמקום משחק השמיעה יש משחק התאמה. לקול הכי אנושי פתחו את המשחק בדפדפן Microsoft Edge.</p>'}
+  <p>ההתקדמות נשמרת בדפדפן הזה. <button class="linkbtn" data-a="unlock">לפתוח את כל השלבים</button> · <button class="linkbtn" data-a="reset">להתחיל מחדש</button></p></details>`;
+  app.innerHTML=h;
+}
+function renderLearn(st){
+  let h=`<div class="guide"><div class="ani">${st.animal}</div><div class="bubble heb">${heVoice?`<button class="speak say" data-a="sayintro" aria-label="הקרא">🔊</button>`:''}${esc(st.intro)}</div></div>`;
+  h+=`<div class="panel"><div class="vowels">${st.vowels.map(v=>`<div class="vowel heb" style="background:${st.color}"><div class="mark">${v.f('מ')}</div><div class="vn">${v.n}</div><div class="vh">${v.h}</div></div>`).join('')}</div></div>`;
+  if(st.sound){
+    h+=`<div class="panel"><p class="q heb">${heVoice?'לְחַץ עַל הַבְרָה וְתִשְׁמַע אוֹתָהּ:':'קְרָא אֶת הַהֲבָרוֹת:'}</p>`;
+    st.vowels.forEach(v=>{h+=`<div class="grid heb" style="margin-bottom:10px">${LETTERS.slice(0,6).map(L=>`<button class="tile" data-a="saysyl" data-t="${esc(SAY[st.sound](L))}">${v.f(L)}</button>`).join('')}</div>`});
+    h+=`</div>`;
+  }else{
+    h+=`<div class="panel"><p class="q heb">הַשְּׁוָא צָבוּעַ בְּוָרֹד. ${heVoice?'לְחַץ וְתִשְׁמַע:':''}</p><div class="wordrow heb">${st.words.slice(0,6).map(w=>`<button class="wordcard" data-a="sayword" data-t="${esc(w[0])}"><div class="e">${w[1]}</div><div class="w">${hiShva(w[0])}</div></button>`).join('')}</div></div>`;
+  }
+  h+=`<div class="center"><button class="btn" data-a="next">יאללה מתרגלים! ▶</button></div>`;
+  return h;
+}
+function renderGame(st,k){
+  const r=S.round,n=COUNTS[k];
+  let h=`<div class="panel"><div class="prog">${Array.from({length:n},(_,i)=>`<i class="${i<S.q?'d':i===S.q?'c':''}"></i>`).join('')}</div>`;
+  if(r.kind==='listen'){
+    h+=`<p class="q heb">הַקְשֵׁב וּבְחַר מָה ${st.guide} אָמַר:</p><div class="center"><button class="speak big" data-a="replay" aria-label="השמע שוב">🔊</button></div>`;
+    h+=`<div class="opts heb">${r.opts.map(o=>`<button class="opt" data-a="pick" data-v="${esc(o)}">${st.sound?o:hiShva(o)}</button>`).join('')}</div>`;
+  }else if(r.kind==='match'){
+    h+=`<p class="q heb">מְצָא אֶת אוֹתוֹ הַדָּבָר בְּדִיּוּק:</p><div class="target heb">${esc(r.answer)}</div>`;
+    h+=`<div class="opts heb">${r.opts.map(o=>`<button class="opt" data-a="pick" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+  }else if(r.kind==='read'){
+    h+=`<p class="q heb">קְרָא אֶת הַמִּלָּה וּבְחַר אֶת הַתְּמוּנָה:</p><div class="target heb">${st.sound?esc(r.word):hiShva(r.word)}</div>`;
+    h+=`<div class="opts">${r.opts.map(o=>`<button class="opt e" data-a="pick" data-v="${esc(o)}">${o}</button>`).join('')}</div>`;
+  }else if(r.kind==='build'){
+    h+=`<p class="q heb">בְּנֵה אֶת הַמִּלָּה – לְחַץ עַל הַהֲבָרוֹת לְפִי הַסֵּדֶר (מִיָּמִין לִשְׂמֹאל):</p><div class="emoji">${r.emoji}</div>`;
+    if(heVoice)h+=`<div class="center"><button class="speak" data-a="replay" aria-label="השמע">🔊</button></div>`;
+    h+=`<div class="slots heb">${r.syl.map((s,i)=>`<div class="slot ${i<r.filled?'f':''}">${i<r.filled?esc(s):''}</div>`).join('')}</div>`;
+    h+=`<div class="tiles heb">${r.tiles.map(t=>`<button class="tile ${t.used?'used':''}" data-a="tile" data-i="${t.i}">${esc(t.s)}</button>`).join('')}</div>`;
+  }
+  h+=`<div class="feedback heb" id="fb"></div></div>`;
+  return h;
+}
+function renderDone(st){
+  const s=P.stars[S.stage]||0,last=S.stage===STAGES.length-1;
+  return `<div class="panel center"><div class="done-ani">${st.animal}</div>
+  <h2 class="heb" style="font-size:34px;margin:8px 0">${last?'סִיַּמְתָּ אֶת כָּל הַשְּׁלָבִים! אַתָּה קוֹרֵא אֲמִתִּי!':'כָּל הַכָּבוֹד! סִיַּמְתָּ אֶת הַשָּׁלָב!'}</h2>
+  <div class="bigstars">${'⭐'.repeat(s)}${'☆'.repeat(3-s)}</div>
+  <p class="heb" style="font-size:20px">${st.guide} גָּאֶה בְּךָ!</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+  ${last?'':`<button class="btn" data-a="nextstage">לַשָּׁלָב הַבָּא ${STAGES[S.stage+1].animal}</button>`}
+  <button class="btn ghost" data-a="again">עוֹד פַּעַם 🔁</button><button class="btn ghost" data-a="home">לַמַּפָּה 🗺️</button></div></div>`;
+}
+
+/* ---------- flow ---------- */
+function openStage(i){S.view='stage';S.stage=i;S.step=0;S.q=0;S.mistakes=0;S.usedBuild=[];render()}
+function nextStep(){
+  S.step++;S.q=0;
+  if(STEPS[S.step]==='done'){
+    const s=S.mistakes<=2?3:S.mistakes<=6?2:1;
+    P.stars[S.stage]=Math.max(P.stars[S.stage]||0,s);
+    if(P.unlocked<S.stage+2)P.unlocked=Math.min(STAGES.length,S.stage+2);
+    save();render();confetti();speak(PRAISE[0]);return;
+  }
+  newRound();render();autoSay();
+}
+function autoSay(){const r=S.round;if(!r)return;if(r.kind==='listen')setTimeout(()=>speak(r.say),350)}
+function feedback(ok){
+  const fb=document.getElementById('fb');if(!fb)return;
+  fb.className='feedback heb '+(ok?'good':'try');fb.textContent=ok?rnd(PRAISE):rnd(TRY);
+}
+function advance(){
+  S.q++;
+  if(S.q>=COUNTS[STEPS[S.step]])return nextStep();
+  newRound();render();autoSay();
+}
+
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.dataset.a;
+  if(a==='home'){S.view='map';try{speechSynthesis.cancel()}catch(x){}render();return}
+  if(a==='open'){const i=+b.dataset.i;if(i+1<=P.unlocked)openStage(i);return}
+  if(a==='unlock'){P.unlocked=STAGES.length;save();render();return}
+  if(a==='reset'){P={unlocked:1,stars:{}};save();render();return}
+  if(a==='testvoice'){speak('שָׁלוֹם! אֲנִי אַרְנָבִי. בּוֹא נִקְרָא יַחַד: אַבָּא, סַבָּא, גַּמָּל!',.9);return}
+  if(a==='sayintro'){speak(STAGES[S.stage].intro,.9);return}
+  if(a==='saysyl'||a==='sayword'){speak(b.dataset.t);b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),400);return}
+  if(a==='next'){nextStep();return}
+  if(a==='nextstage'){openStage(S.stage+1);return}
+  if(a==='again'){openStage(S.stage);return}
+  const r=S.round;if(!r)return;
+  if(a==='replay'){speak(r.kind==='build'?r.word:r.say);return}
+  if(a==='pick'){
+    if(S.locked)return;
+    if(b.dataset.v===r.answer){
+      S.locked=true;b.classList.add('ok');feedback(true);
+      if(r.kind==='read')speak(r.word);
+      setTimeout(advance,1100);
+    }else{
+      S.mistakes++;b.classList.remove('bad');void b.offsetWidth;b.classList.add('bad');feedback(false);
+      if(r.kind==='listen')setTimeout(()=>speak(r.say),500);
+    }
+    return;
+  }
+  if(a==='tile'){
+    if(S.locked)return;
+    const t=r.tiles[+b.dataset.i];if(t.used)return;
+    if(t.s===r.syl[r.filled]){
+      t.used=true;r.filled++;
+      if(r.filled===r.syl.length){S.locked=true;render();feedback(true);speak(r.word);setTimeout(advance,1400)}
+      else render();
+    }else{
+      S.mistakes++;b.classList.remove('bad');void b.offsetWidth;b.classList.add('bad');feedback(false);
+    }
+  }
+});
+app.addEventListener('change',e=>{
+  const c=e.target.dataset&&e.target.dataset.c;if(!c)return;
+  if(c==='voice'){P.voice=e.target.value;pickVoice()}
+  if(c==='pitch')P.pitch=parseFloat(e.target.value);
+  if(c==='speed')P.speed=e.target.value;
+  save();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);
+});
+render();
+if(location.protocol==='https:'&&/github\.io$/.test(location.hostname)){try{navigator.serviceWorker&&navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+</script>
+</body>
+</html>
