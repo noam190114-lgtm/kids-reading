@@ -67,6 +67,12 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .chip{background:#fff;border-radius:12px;padding:6px 12px;font-size:20px;border:2px solid #eef0f6}
 .chip.has{border-color:var(--ok);background:#e7f8ef}
 .chip.on{outline:3px solid var(--accent)}
+.vbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:#fff;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:12px}
+.vchip{background:#f3f4fa;border-radius:999px;padding:6px 14px;font-weight:700;border:2px solid transparent}
+.vchip small{color:var(--muted)}
+.vchip.on{border-color:var(--accent);background:#fff1ea}
+.addv{display:inline-flex;gap:6px;align-items:center}
+.addv input{font:inherit;font-size:16px;padding:6px 10px;border-radius:10px;border:1px solid #ccd;width:170px}
 .linkbtn{text-decoration:underline;color:var(--ink);font-weight:700}
 
 /* lesson */
@@ -215,13 +221,19 @@ function delClip(k){
   if(CLIPS[k])URL.revokeObjectURL(CLIPS[k]);delete CLIPS[k];
   try{DB&&DB.transaction('clips','readwrite').objectStore('clips').delete(k)}catch(e){}
 }
-const useRec=()=>P.narrator!=='tts';
-const hasClip=k=>useRec()&&!!CLIPS[k];
+if(!Array.isArray(P.voices)||!P.voices.length)P.voices=[{id:'v1',name:'הקול שלי'}];
+if(!P.narrator||P.narrator==='rec')P.narrator='rec:'+P.voices[0].id;
+const activeRec=()=>{const id=String(P.narrator).startsWith('rec:')?P.narrator.slice(4):null;return P.voices.some(v=>v.id===id)?id:null};
+const ck=(id,k)=>id+'|'+k;
+const clipFor=(k,id)=>id?(CLIPS[ck(id,k)]||(id==='v1'?CLIPS[k]:undefined)):undefined;
+const voiceCount=id=>Object.keys(CLIPS).filter(k=>k.startsWith(id+'|')||(id==='v1'&&!k.includes('|'))).length;
+const useRec=()=>!!activeRec();
+const hasClip=k=>!!clipFor(k,activeRec());
 const canSay=k=>hasClip(k)||!!heVoice;
 function stopAudio(){try{speechSynthesis.cancel()}catch(e){}if(curAudio){try{curAudio.pause()}catch(e){}curAudio=null}}
 function say(key,text,rate){
   stopAudio();
-  if(hasClip(key)){curAudio=new Audio(CLIPS[key]);curAudio.play().catch(()=>{});return}
+  if(hasClip(key)){curAudio=new Audio(clipFor(key,activeRec()));curAudio.play().catch(()=>{});return}
   speak(text,rate);
 }
 const sylKey=(sound,L)=>'syl:'+SAY[sound](L);
@@ -324,7 +336,11 @@ function renderMap(){
   <div class="voicebox"><b>🎙️ קריין אנושי</b>
     <div>הכי מדויק לילד שלומד לקרוא: <b>להקליט את הקול שלכם</b> (אבא, אמא, סבתא…). מקליטים פעם אחת כל הברה ומילה, והחיות מדברות בקול שלכם. ${Object.keys(CLIPS).length?`כבר הוקלטו ${Object.keys(CLIPS).length} קטעים.`:''}</div>
     <button class="btn small" data-a="studio">🎙️ פתח את חדר ההקלטות</button>
-    <label>מי מקריא: <select data-c="narrator"><option value="rec" ${useRec()?'selected':''}>הקול המוקלט שלנו (ומה שלא הוקלט – קול המכשיר)</option><option value="tts" ${!useRec()?'selected':''}>רק קול המכשיר</option></select></label>
+    <label>מי מקריא: <select data-c="narrator">
+      <optgroup label="קולות מוקלטים">${P.voices.map(v=>`<option value="rec:${v.id}" ${P.narrator==='rec:'+v.id?'selected':''}>🎙️ ${esc(v.name)} (${voiceCount(v.id)} הקלטות)</option>`).join('')}</optgroup>
+      ${HE_VOICES.length?`<optgroup label="קולות המכשיר">${HE_VOICES.map(v=>`<option value="tts:${esc(v.name)}" ${!useRec()&&v===heVoice?'selected':''}>🔊 ${esc(v.name)}</option>`).join('')}</optgroup>`:''}
+    </select></label>
+    <div>מה שעוד לא הוקלט בקול שנבחר – יושמע בקול המכשיר.</div>
   </div>
   ${heVoice?`<div class="voicebox"><b>🔊 קול המכשיר</b>
     <label>קול: <select data-c="voice">${HE_VOICES.map(v=>`<option value="${esc(v.name)}" ${v===heVoice?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>
@@ -385,10 +401,15 @@ function renderDone(st){
 /* ---------- recording studio ---------- */
 const REC={stream:null,mr:null,chunks:[],on:false,err:''};
 function renderStudio(){
-  const items=studioItems(S.sStage),it=items[S.sIdx],done=items.filter(x=>CLIPS[x.k]).length;
+  const V=S.sVoice,items=studioItems(S.sStage),it=items[S.sIdx],done=items.filter(x=>clipFor(x.k,V)).length;
   let h=`<div class="top"><button class="iconbtn" data-a="home" aria-label="חזרה">🏠</button><h1>🎙️ חדר ההקלטות</h1></div>
   <p class="sub">מקליטים את הקול שלכם, והחיות ידברו בו. דברו <b>ברור ולאט, בחדר שקט</b>, והגו את ההברה בדיוק כמו שכתובה (למשל "מָ" = "מָה"). כדאי להקליט על הטאבלט שהילד משחק בו, כי ההקלטות נשמרות במכשיר שעליו הקלטתם.</p>
-  <div class="stabs">${STAGES.map((s,i)=>{const its=studioItems(i),d=its.filter(x=>CLIPS[x.k]).length;return `<button class="stab ${i===S.sStage?'on':''}" data-a="sstage" data-i="${i}">${s.animal} שלב ${i+1}<small>${d}/${its.length}</small></button>`}).join('')}</div>
+  <div class="vbar"><b>מקליטים בקול:</b>
+    ${P.voices.map(v=>`<button class="vchip ${v.id===V?'on':''}" data-a="svoice" data-id="${v.id}">🎙️ ${esc(v.name)} <small>${voiceCount(v.id)}</small></button>`).join('')}
+    <span class="addv"><input id="newvoice" class="heb" maxlength="20" placeholder="קול חדש, למשל: אמא"><button class="btn small" data-a="addvoice">➕ הוסף</button></span>
+    ${P.voices.length>1?`<button class="linkbtn" data-a="delvoice">${S.confirmDel===V?'בטוח? לחץ שוב כדי למחוק את הקול וכל ההקלטות שלו':'🗑 מחק את הקול הזה'}</button>`:''}
+  </div>
+  <div class="stabs">${STAGES.map((s,i)=>{const its=studioItems(i),d=its.filter(x=>clipFor(x.k,V)).length;return `<button class="stab ${i===S.sStage?'on':''}" data-a="sstage" data-i="${i}">${s.animal} שלב ${i+1}<small>${d}/${its.length}</small></button>`}).join('')}</div>
   <div class="panel center">
     <div class="prog" style="margin-bottom:6px">פריט ${S.sIdx+1} מתוך ${items.length} · הוקלטו ${done}</div>
     ${it.e?`<div style="font-size:54px">${it.e}</div>`:''}
@@ -400,11 +421,11 @@ function renderStudio(){
       <button class="nav" data-a="snext" ${S.sIdx===items.length-1?'disabled':''} aria-label="הבא">←</button>
     </div>
     <div class="recrow">
-      ${CLIPS[it.k]?`<button class="btn ghost small" data-a="splay">▶ השמע</button><button class="btn ghost small" data-a="sdel">🗑 מחק</button><span class="okmark">✓ מוקלט</span>`:'<span class="note">עוד לא הוקלט</span>'}
+      ${clipFor(it.k,V)?`<button class="btn ghost small" data-a="splay">▶ השמע</button><button class="btn ghost small" data-a="sdel">🗑 מחק</button><span class="okmark">✓ מוקלט</span>`:'<span class="note">עוד לא הוקלט</span>'}
     </div>
     ${REC.err?`<p class="try heb" style="color:var(--bad)">${esc(REC.err)}</p>`:''}
   </div>
-  <div class="chips heb">${items.map((x,i)=>`<button class="chip ${i===S.sIdx?'on':''} ${CLIPS[x.k]?'has':''}" data-a="sjump" data-i="${i}">${x.small?x.e+' פתיח':esc(x.t)}</button>`).join('')}</div>`;
+  <div class="chips heb">${items.map((x,i)=>`<button class="chip ${i===S.sIdx?'on':''} ${clipFor(x.k,V)?'has':''}" data-a="sjump" data-i="${i}">${x.small?x.e+' פתיח':esc(x.t)}</button>`).join('')}</div>`;
   app.innerHTML=h;
 }
 async function toggleRec(){
@@ -417,7 +438,7 @@ async function toggleRec(){
     REC.mr.ondataavailable=e=>{if(e.data&&e.data.size)REC.chunks.push(e.data)};
     REC.mr.onstop=()=>{
       REC.on=false;const blob=new Blob(REC.chunks,{type:REC.mr.mimeType||'audio/webm'});
-      if(blob.size>800){putClip(it.k,blob);stopAudio();curAudio=new Audio(CLIPS[it.k]);curAudio.play().catch(()=>{})}
+      if(blob.size>800){const kk=ck(S.sVoice,it.k);putClip(kk,blob);if(S.sVoice==='v1'&&CLIPS[it.k])delClip(it.k);stopAudio();curAudio=new Audio(CLIPS[kk]);curAudio.play().catch(()=>{})}
       render();
     };
     REC.mr.start();REC.on=true;stopAudio();render();
@@ -453,15 +474,21 @@ app.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
   const a=b.dataset.a;
   if(a==='home'){if(REC.on)return;S.view='map';stopAudio();render();return}
-  if(a==='studio'){S.view='studio';S.sStage=S.sStage||0;S.sIdx=0;REC.err='';render();return}
+  if(a==='studio'){S.view='studio';S.sVoice=activeRec()||P.voices[0].id;S.confirmDel=null;S.sStage=S.sStage||0;S.sIdx=0;REC.err='';render();return}
   if(a==='rec'){toggleRec();return}
   if(REC.on)return;
   if(a==='sstage'){S.sStage=+b.dataset.i;S.sIdx=0;render();return}
   if(a==='sjump'){S.sIdx=+b.dataset.i;render();return}
   if(a==='sprev'){if(S.sIdx>0)S.sIdx--;render();return}
   if(a==='snext'){if(S.sIdx<studioItems(S.sStage).length-1)S.sIdx++;render();return}
-  if(a==='splay'){const k=studioItems(S.sStage)[S.sIdx].k;stopAudio();if(CLIPS[k]){curAudio=new Audio(CLIPS[k]);curAudio.play().catch(()=>{})}return}
-  if(a==='sdel'){delClip(studioItems(S.sStage)[S.sIdx].k);render();return}
+  if(a==='splay'){const u=clipFor(studioItems(S.sStage)[S.sIdx].k,S.sVoice);stopAudio();if(u){curAudio=new Audio(u);curAudio.play().catch(()=>{})}return}
+  if(a==='sdel'){const k=studioItems(S.sStage)[S.sIdx].k;delClip(ck(S.sVoice,k));if(S.sVoice==='v1')delClip(k);render();return}
+  if(a==='svoice'){S.sVoice=b.dataset.id;S.confirmDel=null;render();return}
+  if(a==='addvoice'){const inp=document.getElementById('newvoice');const name=(inp&&inp.value||'').trim();if(!name){inp&&inp.focus();return}
+    const id='v'+Date.now().toString(36);P.voices.push({id,name});S.sVoice=id;P.narrator='rec:'+id;save();render();return}
+  if(a==='delvoice'){const id=S.sVoice;if(S.confirmDel!==id){S.confirmDel=id;render();return}
+    Object.keys(CLIPS).filter(k=>k.startsWith(id+'|')||(id==='v1'&&!k.includes('|'))).forEach(delClip);
+    P.voices=P.voices.filter(v=>v.id!==id);if(P.narrator==='rec:'+id)P.narrator='rec:'+P.voices[0].id;S.sVoice=P.voices[0].id;S.confirmDel=null;save();render();return}
   if(a==='sayk'){say(b.dataset.k,b.dataset.t);b.classList.add('flash');setTimeout(()=>b.classList.remove('flash'),400);return}
   if(a==='open'){const i=+b.dataset.i;if(i+1<=P.unlocked)openStage(i);return}
   if(a==='unlock'){P.unlocked=STAGES.length;save();render();return}
@@ -503,7 +530,7 @@ app.addEventListener('change',e=>{
   if(c==='voice'){P.voice=e.target.value;pickVoice()}
   if(c==='pitch')P.pitch=parseFloat(e.target.value);
   if(c==='speed')P.speed=e.target.value;
-  if(c==='narrator'){P.narrator=e.target.value;save();render();return}
+  if(c==='narrator'){const v=e.target.value;if(v.startsWith('tts:')){P.narrator='tts';P.voice=v.slice(4);pickVoice();save();render();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);return}P.narrator=v;save();render();return}
   save();speak('שָׁלוֹם! בּוֹא נִקְרָא יַחַד.',.9);
 });
 render();

@@ -1,5 +1,5 @@
 // Offline support: keeps the game working on the tablet without internet.
-const CACHE = 'kids-reading-v3';
+const CACHE = 'kids-reading-v4';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
