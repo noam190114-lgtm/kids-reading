@@ -101,6 +101,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .peek{margin-bottom:8px;color:var(--muted)}
 .peek div{font-size:22px;line-height:1.6}
 .q.big{font-size:clamp(26px,5vw,34px)}
+.speak.sm{width:44px;height:44px;font-size:22px;vertical-align:middle;margin-left:6px}
 .linkbtn{text-decoration:underline;color:var(--ink);font-weight:700}
 
 /* lesson */
@@ -236,11 +237,16 @@ function pickVoice(){
     heVoice=HE_VOICES.find(v=>v.name===P.voice)||HE_VOICES[0]||null;
   }catch(e){heVoice=null;HE_VOICES=[]}
 }
-try{pickVoice();speechSynthesis.onvoiceschanged=()=>{const n=HE_VOICES.length;pickVoice();if(HE_VOICES.length!==n&&S.view==='map')render()}}catch(e){}
+try{pickVoice();speechSynthesis.onvoiceschanged=()=>{const n=HE_VOICES.length;pickVoice();if(HE_VOICES.length!==n&&S.view!=='act')render()}}catch(e){}
+const TTS_OK=typeof speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined';
+// phones often report no voices until later, or never list them, yet can still speak Hebrew
+function noHebrewVoice(){try{const v=speechSynthesis.getVoices();return v.length>0&&!heVoice}catch(e){return true}}
 function speak(t,rate){
-  if(!heVoice)return;
+  if(!TTS_OK)return;
+  if(!heVoice)pickVoice();
   try{
-    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.voice=heVoice;u.lang=heVoice.lang;
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);
+    if(heVoice){u.voice=heVoice;u.lang=heVoice.lang}else u.lang='he-IL';
     const slow=P.speed==='slow'?.85:1;
     u.rate=(rate||.85)*slow;u.pitch=P.pitch||1.15;   // slightly higher & slower = friendlier for kids
     speechSynthesis.speak(u);
@@ -282,13 +288,30 @@ async function loadAI(){
     preloadAI();render();
   }catch(e){}
 }
-const canSay=k=>hasClip(k)||!!heVoice;
-function stopAudio(){try{speechSynthesis.cancel()}catch(e){}if(curAudio){try{curAudio.pause()}catch(e){}curAudio=null}}
+const canSay=k=>hasClip(k)||TTS_OK;
+const PLAYER=new Audio();PLAYER.preload='auto';
+const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+let unlocked=false;
+function unlockAudio(){
+  if(unlocked)return;unlocked=true;
+  try{PLAYER.src=SILENT;PLAYER.play().catch(()=>{})}catch(e){}
+  try{if(TTS_OK){const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang='he-IL';speechSynthesis.speak(u)}}catch(e){}
+  pickVoice();
+}
+document.addEventListener('pointerdown',unlockAudio,{capture:true});
+document.addEventListener('touchstart',unlockAudio,{capture:true,passive:true});
+function stopAudio(){try{speechSynthesis.cancel()}catch(e){}try{PLAYER.pause()}catch(e){}curAudio=null}
+function playUrl(url,fallback){
+  try{PLAYER.src=url;curAudio=PLAYER;const p=PLAYER.play();if(p&&p.catch)p.catch(()=>{fallback&&fallback()})}catch(e){fallback&&fallback()}
+}
 function say(key,text,rate){
   stopAudio();
-  if(hasClip(key)){curAudio=new Audio(clipUrl(key));curAudio.play().catch(()=>{});return}
+  if(hasClip(key)){playUrl(clipUrl(key),()=>speak(text,rate));return}
   speak(text,rate);
 }
+const plain=t=>String(t).replace(/<[^>]*>/g,'').replace(/[^֐-׿\s.,!?:–-]/g,'').replace(/\s+/g,' ').trim();
+function qline(t,cls){return `<p class="q heb ${cls||''}"><button class="speak sm" data-a="sayk" data-k="ins:${esc(plain(t))}" data-t="${esc(plain(t))}" aria-label="הקרא את ההוראה">🔊</button> ${t}</p>`}
+function sayIns(t){say('ins:'+plain(t),plain(t),.9)}
 const sylKey=(sound,L)=>'syl:'+SAY[sound](L);
 const wordKey=w=>'w:'+w;
 function studioItems(i){
@@ -421,7 +444,7 @@ function makeMemory(){
   return {kind:'memory',cards,open:[],moves:0,pairs:0};
 }
 function listenPossible(){
-  if(heVoice)return true;
+  if(heVoice||(TTS_OK&&!noHebrewVoice()))return true;
   const st=STAGES[S.stage];if(!st)return false;
   return st.sound?LETTERS.filter(x=>hasClip(sylKey(st.sound,x))).length>=3:st.words.filter(w=>hasClip(wordKey(w[0]))).length>=3;
 }
@@ -505,7 +528,7 @@ function renderLearn(st){
   h+=`<div class="panel"><div class="vowels">${st.vowels.map(v=>`<div class="vowel heb" style="background:${st.color}"><div class="mark">${v.f('מ')}</div><div class="vn">${v.n}</div><div class="vh">${v.h}</div></div>`).join('')}</div></div>`;
   if(st.sound){
     const any=LETTERS.some(L=>canSay(sylKey(st.sound,L)));
-    h+=`<div class="panel"><p class="q heb">${any?'לְחַץ עַל הַבְרָה וְתִשְׁמַע אוֹתָהּ:':'קְרָא אֶת הַהֲבָרוֹת:'}</p>`;
+    h+=`<div class="panel">${qline(any?'לְחַץ עַל הַבְרָה וְתִשְׁמַע אוֹתָהּ:':'קְרָא אֶת הַהֲבָרוֹת:')}`;
     st.vowels.forEach(v=>{h+=`<div class="grid heb" style="margin-bottom:10px">${LETTERS.map(L=>`<button class="tile" data-a="sayk" data-k="${esc(sylKey(st.sound,L))}" data-t="${esc(SAY[st.sound](L))}">${v.f(L)}</button>`).join('')}</div>`});
     h+=`</div>`;
   }
@@ -520,29 +543,29 @@ function renderGame(st){
   const r=S.round,d=actDef(S.act);
   let h=`<div class="panel">${r.kind==='memory'?'':progress(d.n)}`;
   if(r.kind==='listen'){
-    h+=`<p class="q heb">הַקְשֵׁב וּבְחַר מָה ${st.guide} אָמַר:</p><div class="center"><button class="speak big" data-a="replay" aria-label="השמע שוב">🔊</button></div>`;
+    h+=qline(`הַקְשֵׁב וּבְחַר מָה ${st.guide} אָמַר:`)+`<div class="center"><button class="speak big" data-a="replay" aria-label="השמע שוב">🔊</button></div>`;
     h+=optBtns(r,'heb',o=>st.sound?o:hiShva(o));
   }else if(r.kind==='match'){
-    h+=`<p class="q heb">מְצָא אֶת אוֹתוֹ הַדָּבָר בְּדִיּוּק:</p><div class="target heb">${esc(r.answer)}</div>`+optBtns(r,'heb',esc);
+    h+=qline('מְצָא אֶת אוֹתוֹ הַדָּבָר בְּדִיּוּק:')+`<div class="target heb">${esc(r.answer)}</div>`+optBtns(r,'heb',esc);
   }else if(r.kind==='read'){
-    h+=`<p class="q heb">קְרָא אֶת הַמִּלָּה וּבְחַר אֶת הַתְּמוּנָה:</p><div class="target heb">${wtxt(r.word)}</div>`+optBtns(r,'e');
+    h+=qline('קְרָא אֶת הַמִּלָּה וּבְחַר אֶת הַתְּמוּנָה:')+`<div class="target heb">${wtxt(r.word)}</div>`+optBtns(r,'e');
   }else if(r.kind==='spell'){
-    h+=`<p class="q heb">אֵיזוֹ מִלָּה כְּתוּבָה נָכוֹן? 🔍</p><div class="emoji">${r.emoji}</div>`+optBtns(r,'heb word',wtxt);
+    h+=qline('אֵיזוֹ מִלָּה כְּתוּבָה נָכוֹן? 🔍')+`<div class="emoji">${r.emoji}</div>`+optBtns(r,'heb word',wtxt);
   }else if(r.kind==='missing'){
-    h+=`<p class="q heb">אֵיזוֹ הֲבָרָה חֲסֵרָה? ✏️</p><div class="emoji">${r.emoji}</div><div class="slots heb">${r.syl.map((s,i)=>`<div class="slot ${i===r.gap?(S.locked?'f':''):'f'}">${i===r.gap&&!S.locked?'?':esc(s)}</div>`).join('')}</div>`+optBtns(r,'heb',esc);
+    h+=qline('אֵיזוֹ הֲבָרָה חֲסֵרָה? ✏️')+`<div class="emoji">${r.emoji}</div><div class="slots heb">${r.syl.map((s,i)=>`<div class="slot ${i===r.gap?(S.locked?'f':''):'f'}">${i===r.gap&&!S.locked?'?':esc(s)}</div>`).join('')}</div>`+optBtns(r,'heb',esc);
   }else if(r.kind==='sort'){
-    h+=`<p class="q heb">אֵיזוֹ תְּנוּעָה יֵשׁ בַּהֲבָרָה הַצְּבוּעָה? 🎯</p><div class="target heb"><span class="hl">${esc(r.syl[0])}</span>${esc(r.syl.slice(1).join(''))}</div>`;
+    h+=qline('אֵיזוֹ תְּנוּעָה יֵשׁ בַּהֲבָרָה הַצְּבוּעָה? 🎯')+`<div class="target heb"><span class="hl">${esc(r.syl[0])}</span>${esc(r.syl.slice(1).join(''))}</div>`;
     h+=`<div class="opts snd">${r.opts.map(o=>`<button class="opt heb" data-a="pick" data-v="${o}">${SND_LABEL[o]}</button>`).join('')}</div>`;
   }else if(r.kind==='flash'){
-    h+=`<p class="q heb">קְרָא מַהֵר! הַמִּלָּה תֵּעָלֵם ⚡</p><div class="target heb flashw">${r.hidden?'<span class="gone">❓</span>':wtxt(r.word)}</div>`;
+    h+=qline('קְרָא מַהֵר! הַמִּלָּה תֵּעָלֵם ⚡')+`<div class="target heb flashw">${r.hidden?'<span class="gone">❓</span>':wtxt(r.word)}</div>`;
     if(r.hidden)h+=`<div class="center"><button class="linkbtn" data-a="flashshow">👁 לְהַרְאוֹת שׁוּב</button></div>`+optBtns(r,'e');
   }else if(r.kind==='build'){
-    h+=`<p class="q heb">בְּנֵה אֶת הַמִּלָּה – לְחַץ עַל הַהֲבָרוֹת לְפִי הַסֵּדֶר:</p><div class="emoji">${r.emoji}</div>`;
+    h+=qline('בְּנֵה אֶת הַמִּלָּה – לְחַץ עַל הַהֲבָרוֹת לְפִי הַסֵּדֶר:')+`<div class="emoji">${r.emoji}</div>`;
     if(canSay(wordKey(r.word)))h+=`<div class="center"><button class="speak" data-a="replay" aria-label="השמע">🔊</button></div>`;
     h+=`<div class="slots heb">${r.syl.map((s,i)=>`<div class="slot ${i<r.filled?'f':''}">${i<r.filled?esc(s):''}</div>`).join('')}</div>`;
     h+=`<div class="tiles heb">${r.tiles.map(t=>`<button class="tile ${t.used?'used':''}" data-a="tile" data-i="${t.i}">${esc(t.s)}</button>`).join('')}</div>`;
   }else if(r.kind==='memory'){
-    h+=`<p class="q heb">מְצָא זוּגוֹת: מִלָּה + תְּמוּנָה 🃏 <span class="note">צְעָדִים: ${r.moves}</span></p><div class="mem">${r.cards.map(c=>`<button class="mcard ${c.up||c.done?'up':''} ${c.done?'done':''}" data-a="mem" data-i="${c.i}">${c.up||c.done?`<span class="${c.w?'heb mw':'me'}">${c.w?wtxt(c.t):c.t}</span>`:'❔'}</button>`).join('')}</div>`;
+    h+=qline('מְצָא זוּגוֹת: מִלָּה וּתְמוּנָה 🃏')+`<p class="note center">צְעָדִים: ${r.moves}</p><div class="mem">${r.cards.map(c=>`<button class="mcard ${c.up||c.done?'up':''} ${c.done?'done':''}" data-a="mem" data-i="${c.i}">${c.up||c.done?`<span class="${c.w?'heb mw':'me'}">${c.w?wtxt(c.t):c.t}</span>`:'❔'}</button>`).join('')}</div>`;
   }
   h+=`<div class="feedback heb" id="fb"></div></div>`;
   return h;
@@ -551,12 +574,12 @@ function renderStory(st){
   const s=st.story;
   if(S.storyQ<0){
     return `<div class="panel story"><div class="emoji">${s.pic}</div>${s.lines.map((l,i)=>`<button class="sline heb" data-a="sline" data-i="${i}">${wtxt(l)}</button>`).join('')}
-      <p class="note heb">${heVoice||AIV.length?'לְחַץ עַל שׁוּרָה כְּדֵי לִשְׁמֹעַ אוֹתָהּ':''}</p><div class="center"><button class="btn" data-a="storygo">קָרָאתִי! לַשְּׁאֵלוֹת ▶</button></div></div>`;
+      <p class="note heb">🔊 לְחַץ עַל שׁוּרָה כְּדֵי לִשְׁמֹעַ אוֹתָהּ</p><div class="center"><button class="btn" data-a="storygo">קָרָאתִי! לַשְּׁאֵלוֹת ▶</button></div></div>`;
   }
   const q=s.qs[S.storyQ];S.round={kind:'storyq',answer:q.a,opts:q.opts};
   const isPic=q.opts.every(o=>!/[א-ת]/.test(o));
   return `<div class="panel">${progress(s.qs.length)}<details class="peek"><summary class="heb">📖 לְהָצִיץ בַּסִּפּוּר</summary>${s.lines.map(l=>`<div class="heb">${wtxt(l)}</div>`).join('')}</details>
-    <p class="q heb big">${wtxt(q.q)}</p>${optBtns(S.round,isPic?'e':'heb word',isPic?null:wtxt)}<div class="feedback heb" id="fb"></div></div>`;
+    ${qline(wtxt(q.q),'big')}${optBtns(S.round,isPic?'e':'heb word',isPic?null:wtxt)}<div class="feedback heb" id="fb"></div></div>`;
 }
 function renderDone(st){
   const s=S.lastStars||1,list=actsFor(S.stage===MIX?0:S.stage).filter(a=>a.n),idx=list.findIndex(a=>a.id===S.act),nx=S.stage!==MIX&&list[idx+1];
@@ -623,7 +646,9 @@ function openStage(i){S.view='stage';S.stage=i;S.act=null;S.done=false;stopAudio
 function openAct(id){
   S.view='act';S.act=id;S.q=0;S.mistakes=0;S.done=false;S.storyQ=-1;S.round=null;if(S.deckStage!==S.stage){S.decks={};S.deckStage=S.stage}
   if(id!=='learn'&&id!=='story')newRound();
-  render();autoSay();
+  render();
+  const ins=S.round&&INS[S.round.kind];
+  if(ins)sayIns(ins);else autoSay();
 }
 function finishAct(){
   clearTimeout(flashTimer);
@@ -633,13 +658,14 @@ function finishAct(){
   P.acts=P.acts||{};const k=starKey(S.stage,S.act);P.acts[k]=Math.max(P.acts[k]||0,s);
   S.lastStars=s;S.done=true;save();render();confetti();say('praise',PRAISE[0]);
 }
+const INS={read:'קְרָא אֶת הַמִּלָּה וּבְחַר אֶת הַתְּמוּנָה',spell:'אֵיזוֹ מִלָּה כְּתוּבָה נָכוֹן?',missing:'אֵיזוֹ הֲבָרָה חֲסֵרָה?',sort:'אֵיזוֹ תְּנוּעָה יֵשׁ בַּהֲבָרָה הַצְּבוּעָה?',flash:'קְרָא מַהֵר! הַמִּלָּה תֵּעָלֵם',build:'בְּנֵה אֶת הַמִּלָּה',memory:'מְצָא זוּגוֹת שֶׁל מִלָּה וּתְמוּנָה',match:'מְצָא אֶת אוֹתוֹ הַדָּבָר בְּדִיּוּק'};
 function autoSay(){const r=S.round;if(!r)return;if(r.kind==='listen')setTimeout(()=>say(r.key,r.say),350)}
 function feedback(ok){
   const fb=document.getElementById('fb');if(!fb)return;
   fb.className='feedback heb '+(ok?'good':'try');fb.textContent=ok?rnd(PRAISE):rnd(TRY);
 }
 function advance(){
-  if(S.act==='story'){S.storyQ++;S.q++;if(S.storyQ>=STAGES[S.stage].story.qs.length)return finishAct();render();return}
+  if(S.act==='story'){S.storyQ++;S.q++;if(S.storyQ>=STAGES[S.stage].story.qs.length)return finishAct();render();sayIns(STAGES[S.stage].story.qs[S.storyQ].q);return}
   S.q++;
   if(S.q>=actDef(S.act).n)return finishAct();
   newRound();render();autoSay();
@@ -657,7 +683,7 @@ app.addEventListener('click',e=>{
   if(a==='sjump'){S.sIdx=+b.dataset.i;render();return}
   if(a==='sprev'){if(S.sIdx>0)S.sIdx--;render();return}
   if(a==='snext'){if(S.sIdx<studioItems(S.sStage).length-1)S.sIdx++;render();return}
-  if(a==='splay'){const u=clipFor(studioItems(S.sStage)[S.sIdx].k,S.sVoice);stopAudio();if(u){curAudio=new Audio(u);curAudio.play().catch(()=>{})}return}
+  if(a==='splay'){const u=clipFor(studioItems(S.sStage)[S.sIdx].k,S.sVoice);stopAudio();if(u)playUrl(u);return}
   if(a==='sdel'){const k=studioItems(S.sStage)[S.sIdx].k;delClip(ck(S.sVoice,k));if(S.sVoice==='v1')delClip(k);render();return}
   if(a==='svoice'){S.sVoice=b.dataset.id;S.confirmDel=null;render();return}
   if(a==='addvoice'){const inp=document.getElementById('newvoice');const name=(inp&&inp.value||'').trim();if(!name){inp&&inp.focus();return}
@@ -676,7 +702,7 @@ app.addEventListener('click',e=>{
   if(a==='testvoice'){speak('שָׁלוֹם! אֲנִי אַרְנָבִי. בּוֹא נִקְרָא יַחַד: אַבָּא, סַבָּא, גַּמָּל!',.9);return}
   if(a==='sayintro'){say('intro:'+S.stage,STAGES[S.stage].intro,.9);return}
   if(a==='sline'){const l=STAGES[S.stage].story.lines[+b.dataset.i];say('st:'+l,l,.85);document.querySelectorAll('.sline').forEach(x=>x.classList.remove('on'));b.classList.add('on');return}
-  if(a==='storygo'){S.storyQ=0;S.q=0;render();return}
+  if(a==='storygo'){S.storyQ=0;S.q=0;render();sayIns(STAGES[S.stage].story.qs[0].q);return}
   const r=S.round;if(!r)return;
   if(a==='replay'){if(r.kind==='build')say(wordKey(r.word),r.word);else say(r.key,r.say);return}
   if(a==='flashshow'){S.mistakes++;r.hidden=false;render();scheduleFlash();return}
