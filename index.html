@@ -621,7 +621,7 @@ async function toggleRec(){
 /* ---------- flow ---------- */
 function openStage(i){S.view='stage';S.stage=i;S.act=null;S.done=false;stopAudio();render()}
 function openAct(id){
-  S.view='act';S.act=id;S.q=0;S.mistakes=0;S.done=false;S.storyQ=-1;S.round=null;
+  S.view='act';S.act=id;S.q=0;S.mistakes=0;S.done=false;S.storyQ=-1;S.round=null;if(S.deckStage!==S.stage){S.decks={};S.deckStage=S.stage}
   if(id!=='learn'&&id!=='story')newRound();
   render();autoSay();
 }
