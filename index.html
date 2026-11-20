@@ -642,9 +642,10 @@ async function toggleRec(){
 }
 
 /* ---------- flow ---------- */
-function openStage(i){S.view='stage';S.stage=i;S.act=null;S.done=false;stopAudio();render()}
+let advTimer;
+function openStage(i){clearTimeout(advTimer);S.view='stage';S.stage=i;S.act=null;S.done=false;stopAudio();render()}
 function openAct(id){
-  S.view='act';S.act=id;S.q=0;S.mistakes=0;S.done=false;S.storyQ=-1;S.round=null;if(S.deckStage!==S.stage){S.decks={};S.deckStage=S.stage}
+  clearTimeout(advTimer);S.view='act';S.act=id;S.q=0;S.mistakes=0;S.done=false;S.storyQ=-1;S.round=null;S.locked=false;if(S.deckStage!==S.stage){S.decks={};S.deckStage=S.stage}
   if(id!=='learn'&&id!=='story')newRound();
   render();
   const ins=S.round&&INS[S.round.kind];
@@ -665,7 +666,7 @@ function feedback(ok){
   fb.className='feedback heb '+(ok?'good':'try');fb.textContent=ok?rnd(PRAISE):rnd(TRY);
 }
 function advance(){
-  if(S.act==='story'){S.storyQ++;S.q++;if(S.storyQ>=STAGES[S.stage].story.qs.length)return finishAct();render();sayIns(STAGES[S.stage].story.qs[S.storyQ].q);return}
+  if(S.act==='story'){S.storyQ++;S.q++;S.locked=false;if(S.storyQ>=STAGES[S.stage].story.qs.length)return finishAct();render();sayIns(STAGES[S.stage].story.qs[S.storyQ].q);return}
   S.q++;
   if(S.q>=actDef(S.act).n)return finishAct();
   newRound();render();autoSay();
@@ -675,7 +676,7 @@ function wrong(b){S.mistakes++;b.classList.remove('bad');void b.offsetWidth;b.cl
 app.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
   const a=b.dataset.a;
-  if(a==='home'){if(REC.on)return;clearTimeout(flashTimer);S.view='map';S.confirmReset=false;stopAudio();render();return}
+  if(a==='home'){if(REC.on)return;clearTimeout(flashTimer);clearTimeout(advTimer);S.view='map';S.confirmReset=false;stopAudio();render();return}
   if(a==='studio'){S.view='studio';S.sVoice=activeRec()||P.voices[0].id;S.confirmDel=null;S.sStage=S.sStage||0;S.sIdx=0;REC.err='';render();return}
   if(a==='rec'){toggleRec();return}
   if(REC.on)return;
@@ -702,7 +703,7 @@ app.addEventListener('click',e=>{
   if(a==='testvoice'){speak('שָׁלוֹם! אֲנִי אַרְנָבִי. בּוֹא נִקְרָא יַחַד: אַבָּא, סַבָּא, גַּמָּל!',.9);return}
   if(a==='sayintro'){say('intro:'+S.stage,STAGES[S.stage].intro,.9);return}
   if(a==='sline'){const l=STAGES[S.stage].story.lines[+b.dataset.i];say('st:'+l,l,.85);document.querySelectorAll('.sline').forEach(x=>x.classList.remove('on'));b.classList.add('on');return}
-  if(a==='storygo'){S.storyQ=0;S.q=0;render();sayIns(STAGES[S.stage].story.qs[0].q);return}
+  if(a==='storygo'){S.storyQ=0;S.q=0;S.locked=false;render();sayIns(STAGES[S.stage].story.qs[0].q);return}
   const r=S.round;if(!r)return;
   if(a==='replay'){if(r.kind==='build')say(wordKey(r.word),r.word);else say(r.key,r.say);return}
   if(a==='flashshow'){S.mistakes++;r.hidden=false;render();scheduleFlash();return}
@@ -714,7 +715,7 @@ app.addEventListener('click',e=>{
       else b.classList.add('ok');
       feedback(true);
       if(r.word&&r.kind!=='sort')say(wordKey(r.word),r.word);
-      setTimeout(advance,1200);
+      advTimer=setTimeout(advance,1200);
     }else{
       wrong(b);
       if(r.kind==='listen')setTimeout(()=>say(r.key,r.say),500);
@@ -726,7 +727,7 @@ app.addEventListener('click',e=>{
     const t=r.tiles[+b.dataset.i];if(t.used)return;
     if(t.s===r.syl[r.filled]){
       t.used=true;r.filled++;
-      if(r.filled===r.syl.length){S.locked=true;render();feedback(true);say(wordKey(r.word),r.word);setTimeout(advance,1400)}
+      if(r.filled===r.syl.length){S.locked=true;render();feedback(true);say(wordKey(r.word),r.word);advTimer=setTimeout(advance,1400)}
       else render();
     }else wrong(b);
     return;
