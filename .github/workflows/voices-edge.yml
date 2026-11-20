@@ -1,16 +1,7 @@
-name: יצירת קריינים (Azure – הילה ואברי)
+name: יצירת קריינים (הילה ואברי – בלי מפתח)
 
 on:
   workflow_dispatch:
-    inputs:
-      voices:
-        description: "קולות: שם=מזהה:מין, מופרדים בפסיק"
-        required: false
-        default: "הילה=he-IL-HilaNeural:female,אברי=he-IL-AvriNeural:male"
-      redo:
-        description: "קולות ליצור מחדש מאפס (לא חובה)"
-        required: false
-        default: ""
 
 permissions:
   contents: write
@@ -23,27 +14,25 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: 20
+          python-version: "3.12"
+      - name: Install the voice tool
+        run: pip install edge-tts
       - name: Generate narrator audio
-        env:
-          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
-          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
-          VOICES: ${{ inputs.voices }}
-          REDO: ${{ inputs.redo }}
-        run: node tools/generate-voices-azure.mjs
+        run: python tools/generate-voices-edge.py
       - name: Save the audio files to the repo
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          find audio -name '*.tmp' -delete
           git add audio
           if git diff --cached --quiet; then echo "Nothing new"; exit 0; fi
-          git commit -m "קריינים: הילה ואברי (Azure)"
+          git commit -m "קריינים: הילה ואברי"
           git pull --rebase
           git push
       - name: Refresh the game site
