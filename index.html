@@ -277,7 +277,8 @@ const voiceCount=id=>Object.keys(CLIPS).filter(k=>k.startsWith(id+'|')||(id==='v
 let AIV=[];
 const activeAI=()=>String(P.narrator).startsWith('ai:')?AIV.find(v=>v.slug===P.narrator.slice(3))||null:null;
 const useRec=()=>!!activeRec()||!!activeAI();
-function clipUrl(k){const ai=activeAI();if(ai)return ai.files[k]?'audio/'+ai.files[k]:undefined;return clipFor(k,activeRec())}
+// if the chosen narrator has no recording for this item, borrow one from another narrator (same gender first) instead of going silent
+function clipUrl(k){const ai=activeAI();if(ai){if(ai.files[k])return 'audio/'+ai.files[k];const alt=AIV.filter(v=>v.files[k]).sort((x,y)=>(y.gender===ai.gender)-(x.gender===ai.gender))[0];return alt?'audio/'+alt.files[k]:undefined}return clipFor(k,activeRec())}
 const hasClip=k=>!!clipUrl(k);
 const gIcon=g=>/female/i.test(g)?'👩':/male/i.test(g)?'👨':'🗣️';
 function preloadAI(){const ai=activeAI();if(!ai)return;Object.values(ai.files).forEach((f,i)=>setTimeout(()=>{try{fetch('audio/'+f).catch(()=>{})}catch(e){}},i*40))}
