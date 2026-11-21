@@ -67,7 +67,9 @@ try:
         for i, s in enumerate(SAMPLES):
             try:
                 try:  # our own niqqud is exact; let the engine add the stress
-                    ph = phonemize(s, predict_stress=True, predict_vocal_shva=True)
+                    # a shva under the first letter of a word is always spoken (shva na): mark it for the engine
+                    sv = re.sub(r'(^|\s)([א-ת][\u05bc\u05c1\u05c2]*\u05b0)', '\\1\\2\u05bd', s)
+                    ph = phonemize(sv, predict_stress=True, predict_vocal_shva=True)
                 except TypeError:
                     ph = phonemize(nik.add_diacritics(plain(s)))
                 samples, sr = piper.create(ph, is_phonemes=True)
