@@ -2,10 +2,31 @@
 # free edge-tts tool (the read-aloud voices of Microsoft Edge). No account or key needed.
 # Runs inside GitHub Actions (see .github/workflows/voices-edge.yml).
 # Only creates files that don't exist yet, so re-running is cheap.
-import asyncio, hashlib, json, os, sys
+import asyncio, hashlib, json, os, re, sys
 import edge_tts
 
-RATE = os.environ.get('RATE', '-8%')  # a little slower = easier for young readers
+RATE = os.environ.get('RATE', '+0%')
+
+# Words and sentences are read WITHOUT niqqud: the voices then use their own Hebrew knowledge and
+# put the stress in the right place (mostly on the last syllable). Niqqud is kept only where it is
+# needed: single syllables (syl:, ds:), vowel sounds like "אַ", and words that are ambiguous without it.
+# Words that look different in full spelling are written that way (מטה -> מיטה).
+PLENE = {'מלה': 'מילה', 'במלה': 'במילה', 'המלה': 'המילה', 'נקדה': 'נקודה', 'נקדות': 'נקודות',
+         'תעלם': 'תיעלם', 'לטיל': 'לטייל', 'שחק': 'שיחק', 'והקבוץ': 'והקובוץ', 'השוא': 'השווא',
+         'מטה': 'מיטה', 'חטה': 'חיטה', 'שנים': 'שיניים', 'צפור': 'ציפור', 'כנור': 'כינור', 'קפוד': 'קיפוד',
+         'כסא': 'כיסא', 'אזן': 'אוזן', 'אהל': 'אוהל', 'דבי': 'דובי', 'סכריה': 'סוכרייה', 'מטריה': 'מטרייה',
+         'עפרון': 'עיפרון', 'מכנסים': 'מכנסיים', 'משקפים': 'משקפיים', 'עינים': 'עיניים'}
+KEEP = {'א', 'אי', 'או', 'שרה', 'מלון'}  # keep these exactly as written, with niqqud
+NIQ = re.compile('[\u0591-\u05C7]')
+
+
+def speakable(key, text):
+    if key.split(':')[0] in ('syl', 'ds'):
+        return text
+    def tok(m):
+        t = m.group(0); bare = NIQ.sub('', t)
+        return t if bare in KEEP else PLENE.get(bare, bare)
+    return re.sub('[א-ת][א-ת\u0591-\u05C7]*', tok, text)
 VOICES = [
     {'slug': 'v-hila', 'name': 'הילה', 'gender': 'female', 'id': 'he-IL-HilaNeural'},
     {'slug': 'v-avri', 'name': 'אברי', 'gender': 'male', 'id': 'he-IL-AvriNeural'},
@@ -40,13 +61,15 @@ async def main():
     made, entries = 0, []
     for v in VOICES:
         d = os.path.join('audio', v['slug'])
+        if os.environ.get('REDO') == 'yes':  # re-record everything (e.g. after changing how text is read)
+            import shutil; shutil.rmtree(d, ignore_errors=True)
         os.makedirs(d, exist_ok=True)
         entry = {'slug': v['slug'], 'name': v['name'], 'gender': v['gender'], 'files': {}}
         entries.append(entry)
         for it in items:
             f = os.path.join(d, file_for(it['key']))
             if not os.path.exists(f):
-                await tts(v['id'], it['text'], f)
+                await tts(v['id'], speakable(it['key'], it['text']), f)
                 made += 1
                 print(v['name'], it['key'])
                 await asyncio.sleep(0.3)

@@ -2,6 +2,11 @@ name: יצירת קריינים (הילה ואברי – בלי מפתח)
 
 on:
   workflow_dispatch:
+    inputs:
+      redo:
+        description: "להקליט הכול מחדש? (yes/no)"
+        required: false
+        default: "no"
 
 permissions:
   contents: write
@@ -23,6 +28,8 @@ jobs:
       - name: Install the voice tool
         run: pip install edge-tts
       - name: Generate narrator audio
+        env:
+          REDO: ${{ inputs.redo }}
         run: python tools/generate-voices-edge.py
       - name: Save the audio files to the repo
         if: always()
