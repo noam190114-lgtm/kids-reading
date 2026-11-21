@@ -66,7 +66,10 @@ try:
         labels[tag] = f'מנוע עברי פתוח עם הטעמה ({os.path.basename(m)[:-5]})'
         for i, s in enumerate(SAMPLES):
             try:
-                ph = phonemize(nik.add_diacritics(plain(s)))
+                try:  # our own niqqud is exact; let the engine add the stress
+                    ph = phonemize(s, predict_stress=True)
+                except TypeError:
+                    ph = phonemize(nik.add_diacritics(plain(s)))
                 samples, sr = piper.create(ph, is_phonemes=True)
                 w = f'{OUT}/{tag}-{i}.wav'
                 sf.write(w, samples, sr)
