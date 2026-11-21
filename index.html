@@ -126,6 +126,16 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .wordcard .e{font-size:40px}
 .wordcard .w{font-size:36px;font-weight:800}
 .shva{color:#e0457b}
+.dg{color:#1d6fd6}.rf{color:#e8730c}
+.gap{display:inline-block;min-width:.7em;border-bottom:8px dashed #c9cde0;color:#b0b4c6}
+.dpairs{display:grid;gap:12px}.dpair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dhalf{background:#fff;border-radius:18px;box-shadow:var(--shadow);border:3px solid #eef0f6;padding:8px;text-align:center}
+.dhalf.on{border-color:#bcd6fb}.dhalf.off{border-color:#fbd5b0}
+.dhalf .dl,.opt .dl{font-size:clamp(52px,12vw,72px);font-weight:800;line-height:1.1}
+.dhalf .e{font-size:36px}.dhalf .w{font-size:28px;font-weight:800}
+.opts.dsnd{grid-template-columns:repeat(2,1fr)}.opt .da{font-size:clamp(22px,5vw,30px)}
+.grid.g5{grid-template-columns:repeat(5,1fr)}
+.rule{background:#fff8e1;border-radius:16px;padding:10px 14px;font-size:22px;line-height:1.7;margin-top:12px}
 .btn{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;font-weight:800;font-size:24px;border-radius:20px;padding:14px 28px;box-shadow:0 6px 0 rgba(0,0,0,.18)}
 .btn.ghost{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
 .center{text-align:center}
@@ -211,8 +221,27 @@ const STAGES=[
   vowels:[{n:'שְׁוָא',f:L=>L+'ְ',h:'שְׁתֵּי נְקֻדּוֹת עוֹמְדוֹת'}],
   words:['אַרְנָב|🐇|אַרְ-נָב','נְמָלָה|🐜|נְ-מָ-לָה','סַבְתָּא|👵|סַבְ-תָּא','מַזְלֵג|🍴|מַזְ-לֵג','צְפַרְדֵּעַ|🐸|צְ-פַרְ-דֵּ-עַ','תַּרְנְגוֹל|🐓|תַּרְ-נְ-גוֹל','פַּרְפַּר|🦋|פַּרְ-פַּר','דְּבוֹרָה|🐝|דְּ-בוֹ-רָה','מִשְׁקָפַיִם|👓|מִשְׁ-קָ-פַ-יִם','מַחְשֵׁב|💻|מַחְ-שֵׁב','מִכְנָסַיִם|👖|מִכְ-נָ-סַ-יִם','עַכְבָּר|🐭|עַכְ-בָּר','סְנָאִי|🐿️|סְ-נָ-אִי','אַבְטִיחַ|🍉|אַבְ-טִי-חַ','מִטְרִיָּה|☂️|מִטְ-רִ-יָּה','מִגְדָּל|🗼|מִגְ-דָּל'].map(W),
   story:{pic:'🐇🐸',lines:['אַרְנָב קָטָן יָצָא לְטַיֵּל.','בַּדֶּרֶךְ הוּא פָּגַשׁ צְפַרְדֵּעַ.','הַצְּפַרְדֵּעַ קָפְצָה גָּבוֹהַּ.','הָאַרְנָב קָפַץ אַחֲרֶיהָ.','שְׁנֵיהֶם צָחֲקוּ!'],
-   qs:[{q:'אֶת מִי פָּגַשׁ הָאַרְנָב?',opts:['🐝','🐸','🐜'],a:'🐸'},{q:'מָה עָשְׂתָה הַצְּפַרְדֵּעַ?',opts:['קָפְצָה','יָשְׁנָה','שָׁרָה'],a:'קָפְצָה'},{q:'מָה עָשׂוּ שְׁנֵיהֶם בַּסּוֹף?',opts:['בָּכוּ','צָחֲקוּ','אָכְלוּ'],a:'צָחֲקוּ'}]}}
+   qs:[{q:'אֶת מִי פָּגַשׁ הָאַרְנָב?',opts:['🐝','🐸','🐜'],a:'🐸'},{q:'מָה עָשְׂתָה הַצְּפַרְדֵּעַ?',opts:['קָפְצָה','יָשְׁנָה','שָׁרָה'],a:'קָפְצָה'},{q:'מָה עָשׂוּ שְׁנֵיהֶם בַּסּוֹף?',opts:['בָּכוּ','צָחֲקוּ','אָכְלוּ'],a:'צָחֲקוּ'}]}},
+ {animal:'🦊',guide:'שועלי',title:'בּ כּ פּ – עִם דָּגֵשׁ וּבְלִי',dagesh:true,color:'#d6ecff',
+  intro:'שָׁלוֹם! אֲנִי שׁוּעָלִי. לִפְעָמִים יֵשׁ נְקֻדָּה בְּתוֹךְ הָאוֹת – זֶה הַדָּגֵשׁ. הַדָּגֵשׁ מְשַׁנֶּה אֶת הַצְּלִיל: בַּלּוֹן עִם דָּגֵשׁ, וְלֵב בְּלִי דָּגֵשׁ. כַּדּוּר עִם דָּגֵשׁ, וּמְכוֹנִית בְּלִי. פָּנָס עִם דָּגֵשׁ, וְקָפֶה בְּלִי!',
+  vowels:[],
+  words:['בַּלּוֹן|🎈|בַּ-לּוֹן','בּוֹטֵן|🥜|בּוֹ-טֵן','דֻּבִּי|🧸|דֻּ-בִּי','זְאֵב|🐺|זְ-אֵב','לֵב|❤️|לֵב','דְּבַשׁ|🍯|דְּ-בַשׁ','עֲנָבִים|🍇|עֲ-נָ-בִים','כֶּלֶב|🐕|כֶּ-לֶב','כַּדּוּר|⚽|כַּ-דּוּר','כִּסֵּא|🪑|כִּ-סֵּא','עַכָּבִישׁ|🕷️|עַ-כָּ-בִישׁ','מְכוֹנִית|🚗|מְ-כוֹ-נִית','עַכְבָּר|🐭|עַכְ-בָּר','כּוֹכָב|⭐|כּוֹ-כָב','מֶלֶךְ|👑|מֶ-לֶךְ','מִכְתָּב|✉️|מִכְ-תָּב','פָּנָס|🔦|פָּ-נָס','עִפָּרוֹן|✏️|עִ-פָּ-רוֹן','תַּפּוּחַ|🍎|תַּ-פּוּ-חַ','סֵפֶר|📖|סֵ-פֶר','קָפֶה|☕|קָ-פֶה','טֶלֶפוֹן|☎️|טֶ-לֶ-פוֹן','שׁוֹפָר|📯|שׁוֹ-פָר'].map(W),
+  story:{pic:'🐕⚽🐘',lines:['כֶּלֶב קָטָן מָצָא כַּדּוּר.','הַכֶּלֶב שִׂחֵק עִם הַפִּיל.','הַפִּיל בָּעַט בַּכַּדּוּר חָזָק.','הַכַּדּוּר נָפַל לְתוֹךְ כּוֹס קָפֶה!','הַכֶּלֶב וְהַפִּיל צָחֲקוּ.'],
+   qs:[{q:'מָה מָצָא הַכֶּלֶב?',opts:['🎈','⚽','🦴'],a:'⚽'},{q:'עִם מִי שִׂחֵק הַכֶּלֶב?',opts:['🐘','🐈','🐢'],a:'🐘'},{q:'לְאָן נָפַל הַכַּדּוּר?',opts:['🌊','🧺','☕'],a:'☕'}]}}
 ];
+/* ---------- dagesh (בּ/ב כּ/כ פּ/פ) ---------- */
+const DAG=STAGES.findIndex(s=>s.dagesh);
+const DAGL={'ב':{alt:'כ',on:['בַּלּוֹן','🎈'],off:['לֵב','❤️']},'כ':{alt:'ב',on:['כַּדּוּר','⚽'],off:['מְכוֹנִית','🚗']},'פ':{alt:'כ',on:['פָּנָס','🔦'],off:['קָפֶה','☕']}};
+const DV={a:'ָ',i:'ִי',o:'וֹ',e:'ֶ',u:'וּ'};
+const UNITS=w=>w.match(/[א-ת][֑-ׇ]*/g)||[];
+const hasDag=u=>u.includes('ּ');
+const togDag=u=>hasDag(u)?u.replace('ּ',''):u[0]+'ּ'+u.slice(1);
+const dagTargets=w=>UNITS(w).map((u,i)=>DAGL[u[0]]?i:-1).filter(i=>i>=0);
+const dsyl=(L,on,v)=>L+(on?'ּ':'')+DV[v];
+const dsKey=(L,on,v)=>'ds:'+dsyl(L,on,v);
+// what the narrator is asked to say: sound-alike letters make the soft sound unmistakable (ב=ו, כ=ח)
+function dsylSay(L,on,v){let b=L+(on?'ּ':'');if(!on&&L==='כ')b='ח';if(!on&&L==='ב'&&'aie'.includes(v))b='ו';return b+{a:'ָה',i:'ִי',o:'וֹ',e:'ֶה',u:'וּ'}[v]}
+const hiDag=w=>esc(w).replace(/([א-ת])([֑-ׇ]*)/g,(m,L,mk)=>DAGL[L]?`<span class="${mk.includes('ּ')?'dg':'rf'}">${m}</span>`:'ךף'.includes(L)?`<span class="rf">${m}</span>`:m);
 const PRAISE=['כָּל הַכָּבוֹד!','מְעֻלֶּה!','אַלּוּף!','יוֹפִי!','נִהְדָּר!','אֵיזֶה קוֹרֵא!'];
 const TRY=['כִּמְעַט! נַסֵּה שׁוּב 🙂','לֹא נוֹרָא, עוֹד פַּעַם!'];
 /* ---------- storage (optional) ---------- */
@@ -318,6 +347,7 @@ const wordKey=w=>'w:'+w;
 function studioItems(i){
   const st=STAGES[i],items=[{k:'intro:'+i,t:st.intro,small:true,e:st.animal}];
   if(st.sound)LETTERS.forEach(L=>items.push({k:sylKey(st.sound,L),t:st.vowels[0].f(L)}));
+  if(st.dagesh)Object.keys(DAGL).forEach(L=>[true,false].forEach(on=>Object.keys(DV).forEach(v=>items.push({k:dsKey(L,on,v),t:dsyl(L,on,v)}))));
   st.words.forEach(w=>items.push({k:wordKey(w[0]),t:w[0],e:w[1]}));
   st.story.lines.forEach(l=>items.push({k:'st:'+l,t:l,small:true,e:'📖'}));
   if(i===0)items.push({k:'praise',t:PRAISE[0],e:'🎉'});
@@ -337,19 +367,23 @@ const MIX=STAGES.length; // virtual "mixed challenge" stage
 const S={view:'map',stage:0,act:null,q:0,mistakes:0,round:null,decks:{}};
 const ACTS=[
  {id:'learn',icon:'👀',name:'הֶכֵּרוּת',sub:'פּוֹגְשִׁים אֶת הַתְּנוּעָה'},
+ {id:'dlisten',icon:'👂',name:'שְׁמַע: עִם דָּגֵשׁ אוֹ בְּלִי?',n:8,only:'dagesh'},
+ {id:'dfill',icon:'🔤',name:'הַשְׁלֵם אֶת הָאוֹת',n:8,only:'dagesh'},
+ {id:'dsound',icon:'🎯',name:'אֵיךְ קוֹרְאִים אֶת הָאוֹת?',n:8,only:'dagesh'},
  {id:'listen',icon:'👂',name:'שְׁמַע וּבְחַר',n:8},
  {id:'read',icon:'🖼️',name:'קְרָא וּבְחַר תְּמוּנָה',n:8},
  {id:'build',icon:'🧩',name:'בְּנֵה מִלָּה',n:5},
  {id:'story',icon:'📖',name:'סִפּוּר קָצָר',n:3},
  {id:'spell',icon:'🔍',name:'אֵיזוֹ מִלָּה נְכוֹנָה?',n:8,hard:1},
  {id:'missing',icon:'✏️',name:'הַשְׁלֵם אֶת הַחָסֵר',n:6,hard:1},
- {id:'sort',icon:'🎯',name:'אֵיזוֹ תְּנוּעָה?',n:8,hard:1,min:1},
+ {id:'sort',icon:'🎯',name:'אֵיזוֹ תְּנוּעָה?',n:8,hard:1,min:1,skip:'dagesh'},
  {id:'flash',icon:'⚡',name:'קְרִיאָה מְהִירָה',n:8,hard:1},
  {id:'memory',icon:'🃏',name:'מִשְׂחַק זִכָּרוֹן',n:6,hard:1}
 ];
-const MIX_KINDS=['spell','missing','flash','read','sort'];
+const MIX_KINDS=['spell','missing','flash','read','sort','dfill','dsound'];
 const actDef=id=>id==='mix'?{id:'mix',icon:'🏆',name:'אֶתְגָּר מְעֹרָב',n:12}:ACTS.find(a=>a.id===id);
-const actsFor=i=>ACTS.filter(a=>!(a.min&&i<a.min));
+const actsFor=i=>ACTS.filter(a=>!(a.min&&i<a.min)&&!(a.only&&!(STAGES[i]&&STAGES[i][a.only]))&&!(a.skip&&STAGES[i]&&STAGES[i][a.skip]));
+if(P.acts&&P.acts[(MIX-1)+':mix']&&!P.migDag){P.acts[MIX+':mix']=Math.max(P.acts[MIX+':mix']||0,P.acts[(MIX-1)+':mix']);delete P.acts[(MIX-1)+':mix'];P.migDag=true;save()}
 const app=document.getElementById('app');
 const starKey=(i,a)=>i+':'+a;
 const starsOf=(i,a)=>(P.acts&&P.acts[starKey(i,a)])||0;
@@ -384,7 +418,8 @@ function sylVariants(s){
   const p=parseSyl(s),out=[];
   const dropY=x=>(p.tail[0]==='י'&&(p.snd==='i'||p.snd==='e')&&x!=='i'&&x!=='e')?p.tail.slice(1):p.tail;
   if(p.snd&&p.snd!=='shva')sounds().forEach(x=>{if(x!==p.snd)out.push(p.head+NUC[x]+dropY(x))});
-  const c=s[0];if(LOOK[c]){const n=LOOK[c],keep=[...p.head.slice(1)].filter(m=>m!=='ׁ'&&m!=='ׂ'&&!(m==='ּ'&&'אהחער'.includes(n))).join('');out.push(n+keep+p.nuc+p.tail)}
+  const c=s[0];if(DAGL[c]&&(S.stage===DAG||S.stage===MIX))out.push(togDag(s));
+  if(LOOK[c]){const n=LOOK[c],keep=[...p.head.slice(1)].filter(m=>m!=='ׁ'&&m!=='ׂ'&&!(m==='ּ'&&'אהחער'.includes(n))).join('');out.push(n+keep+p.nuc+p.tail)}
   return [...new Set(out)].filter(x=>x!==s);
 }
 function wordVariants(w,n){
@@ -413,7 +448,7 @@ function makeListen(){
 }
 function pictureOpts(t,n){
   const pool=S.stage===MIX?ALLW:wordsUpTo(S.stage);
-  return shuffle([t[1],...shuffle(pool.filter(w=>w[1]!==t[1])).slice(0,n-1).map(o=>o[1])]);
+  return shuffle([t[1],...[...new Set(shuffle(pool.filter(w=>w[1]!==t[1])).map(o=>o[1]))].slice(0,n-1)]);
 }
 function makeRead(){const t=pickWord();return {kind:'read',word:t[0],answer:t[1],opts:pictureOpts(t,S.stage>=2?4:3)}}
 function makeBuild(){
@@ -449,10 +484,24 @@ function listenPossible(){
   const st=STAGES[S.stage];if(!st)return false;
   return st.sound?LETTERS.filter(x=>hasClip(sylKey(st.sound,x))).length>=3:st.words.filter(w=>hasClip(wordKey(w[0]))).length>=3;
 }
+function makeDListen(){
+  const L=rnd(Object.keys(DAGL)),v=rnd(Object.keys(DV)),on=Math.random()<.5,target=dsyl(L,on,v);
+  const opts=[target,dsyl(L,!on,v)];if(S.q>=3)opts.push(dsyl(DAGL[L].alt,Math.random()<.5,v));
+  return {kind:'dlisten',key:dsKey(L,on,v),say:dsylSay(L,on,v),answer:target,opts:shuffle(opts)};
+}
+function makeDFill(){
+  const t=pickWord(function dag(x){return dagTargets(x[0]).length>0}),us=UNITS(t[0]),gap=rnd(dagTargets(t[0])),u=us[gap];
+  const opts=[u,togDag(u)];if(S.q>=3||S.stage===MIX){const a=DAGL[u[0]].alt+u.slice(1);opts.push(a,togDag(a))}
+  return {kind:'dfill',word:t[0],emoji:t[1],units:us,gap,answer:u,opts:shuffle(opts),key:wordKey(t[0]),say:t[0]};
+}
+function makeDSound(){
+  const t=pickWord(function dag(x){return dagTargets(x[0]).length>0}),us=UNITS(t[0]),idx=rnd(dagTargets(t[0])),u=us[idx];
+  return {kind:'dsound',word:t[0],units:us,idx,L:u[0],answer:hasDag(u)?'on':'off',opts:['on','off'],key:wordKey(t[0]),say:t[0]};
+}
 function newRound(){
   let k=S.act;
   if(k==='mix'){k=rnd(MIX_KINDS)}
-  const m={listen:()=>listenPossible()?makeListen():Object.assign(makeListen(),{kind:'match'}),read:makeRead,build:makeBuild,spell:makeSpell,missing:makeMissing,sort:makeSort,flash:makeFlash,memory:makeMemory};
+  const m={listen:()=>listenPossible()?makeListen():Object.assign(makeListen(),{kind:'match'}),read:makeRead,build:makeBuild,spell:makeSpell,missing:makeMissing,sort:makeSort,flash:makeFlash,memory:makeMemory,dlisten:makeDListen,dfill:makeDFill,dsound:makeDSound};
   S.round=m[k]();S.locked=false;
   if(S.round.kind==='flash')scheduleFlash();
 }
@@ -492,7 +541,7 @@ function renderMap(){
 }
 function renderParent(){
   return `<details class="parent"><summary>👨‍👩‍👧 פינת ההורים</summary>
-  <p>סדר השלבים בנוי כמו בהוראת הקריאה בבית הספר: קמץ ופתח (צליל אַ), חיריק, חולם, צירי וסגול, שורוק וקובוץ, ובסוף שווא. כל השלבים פתוחים. בכל שלב יש היכרות, סיפור קצר עם שאלות הבנה, ומשחקי תרגול. המשחקים שמסומנים 🔥 הם אתגר: מילה עם שגיאת כתיב, הברה חסרה, זיהוי תנועה, קריאה מהירה וזיכרון. המילים מתחלפות ולא חוזרות עד שעוברים על כולן, ובכל שלב משולבות גם מילים משלבים קודמים לחזרה.</p>
+  <p>סדר השלבים בנוי כמו בהוראת הקריאה בבית הספר: קמץ ופתח (צליל אַ), חיריק, חולם, צירי וסגול, שורוק וקובוץ, ושווא, ובסוף אותיות דגושות ולא דגושות (בּ/ב, כּ/כ, פּ/פ) עם משחקים מיוחדים: שמיעה, השלמת האות וזיהוי הצליל. כל השלבים פתוחים. בכל שלב יש היכרות, סיפור קצר עם שאלות הבנה, ומשחקי תרגול. המשחקים שמסומנים 🔥 הם אתגר: מילה עם שגיאת כתיב, הברה חסרה, זיהוי תנועה, קריאה מהירה וזיכרון. המילים מתחלפות ולא חוזרות עד שעוברים על כולן, ובכל שלב משולבות גם מילים משלבים קודמים לחזרה.</p>
   <div class="voicebox"><b>🎙️ הקריין</b>
     <div>הכי מדויק לילד שלומד לקרוא: <b>להקליט את הקול שלכם</b>. ${Object.keys(CLIPS).length?`כבר הוקלטו ${Object.keys(CLIPS).length} קטעים.`:''}</div>
     <button class="btn small" data-a="studio">🎙️ פתח את חדר ההקלטות</button>
@@ -525,6 +574,7 @@ function renderStage(){
   app.innerHTML=h;
 }
 function renderLearn(st){
+  if(st.dagesh)return renderLearnDag(st);
   let h=`<div class="guide"><div class="ani">${st.animal}</div><div class="bubble heb">${canSay('intro:'+S.stage)?`<button class="speak say" data-a="sayintro" aria-label="הקרא">🔊</button>`:''}${esc(st.intro)}</div></div>`;
   h+=`<div class="panel"><div class="vowels">${st.vowels.map(v=>`<div class="vowel heb" style="background:${st.color}"><div class="mark">${v.f('מ')}</div><div class="vn">${v.n}</div><div class="vh">${v.h}</div></div>`).join('')}</div></div>`;
   if(st.sound){
@@ -534,6 +584,16 @@ function renderLearn(st){
     h+=`</div>`;
   }
   h+=`<div class="panel"><p class="q heb">מִלִּים שֶׁל ${st.guide}${st.sound?'':' (הַשְּׁוָא צָבוּעַ בְּוָרֹד)'}:</p><div class="wordrow heb">${st.words.map(w=>`<button class="wordcard" data-a="sayk" data-k="${esc(wordKey(w[0]))}" data-t="${esc(w[0])}"><div class="e">${w[1]}</div><div class="w">${hiShva(w[0])}</div></button>`).join('')}</div></div>`;
+  h+=`<div class="center"><button class="btn" data-a="back">לַמִּשְׂחָקִים ▶</button></div>`;
+  return h;
+}
+function renderLearnDag(st){
+  let h=`<div class="guide"><div class="ani">${st.animal}</div><div class="bubble heb">${canSay('intro:'+S.stage)?`<button class="speak say" data-a="sayintro" aria-label="הקרא">🔊</button>`:''}${esc(st.intro)}</div></div>`;
+  h+=`<div class="panel"><p class="q heb">עִם דָּגֵשׁ 🔵 &nbsp; בְּלִי דָּגֵשׁ 🟠 – לְחַץ וְתִשְׁמַע:</p><div class="dpairs">${Object.keys(DAGL).map(L=>`<div class="dpair">${['on','off'].map(o=>{const an=DAGL[L][o];return `<button class="dhalf ${o}" data-a="sayk" data-k="${esc(wordKey(an[0]))}" data-t="${esc(an[0])}"><div class="dl heb">${L+(o==='on'?'ּ':'')}</div><div class="e">${an[1]}</div><div class="w heb">${hiDag(an[0])}</div></button>`}).join('')}</div>`).join('')}</div>
+  <p class="rule heb">💡 בְּרֹאשׁ מִלָּה – תָּמִיד יֵשׁ דָּגֵשׁ: <span class="dg">בַּ</span>יִת, <span class="dg">כַּ</span>ף, <span class="dg">פִּ</span>יל.<br>בְּסוֹף מִלָּה, ף וְ־ךְ – תָּמִיד בְּלִי דָּגֵשׁ: אַ<span class="rf">ף</span>, מֶלֶ<span class="rf">ךְ</span>.</p></div>`;
+  h+=`<div class="panel">${qline('לְחַץ עַל הַבְרָה וְתִשְׁמַע אוֹתָהּ:')}`;
+  Object.keys(DAGL).forEach(L=>[true,false].forEach(on=>{h+=`<div class="grid g5 heb" style="margin-bottom:10px">${Object.keys(DV).map(v=>`<button class="tile ${on?'dg':'rf'}" data-a="sayk" data-k="${esc(dsKey(L,on,v))}" data-t="${esc(dsylSay(L,on,v))}">${dsyl(L,on,v)}</button>`).join('')}</div>`}));
+  h+=`</div><div class="panel"><p class="q heb">מִלִּים שֶׁל ${st.guide} (כָּחֹל = עִם דָּגֵשׁ, כָּתֹם = בְּלִי):</p><div class="wordrow heb">${st.words.map(w=>`<button class="wordcard" data-a="sayk" data-k="${esc(wordKey(w[0]))}" data-t="${esc(w[0])}"><div class="e">${w[1]}</div><div class="w">${hiDag(w[0])}</div></button>`).join('')}</div></div>`;
   h+=`<div class="center"><button class="btn" data-a="back">לַמִּשְׂחָקִים ▶</button></div>`;
   return h;
 }
@@ -565,6 +625,15 @@ function renderGame(st){
     if(canSay(wordKey(r.word)))h+=`<div class="center"><button class="speak" data-a="replay" aria-label="השמע">🔊</button></div>`;
     h+=`<div class="slots heb">${r.syl.map((s,i)=>`<div class="slot ${i<r.filled?'f':''}">${i<r.filled?esc(s):''}</div>`).join('')}</div>`;
     h+=`<div class="tiles heb">${r.tiles.map(t=>`<button class="tile ${t.used?'used':''}" data-a="tile" data-i="${t.i}">${esc(t.s)}</button>`).join('')}</div>`;
+  }else if(r.kind==='dlisten'){
+    h+=qline('הַקְשֵׁב: עִם דָּגֵשׁ אוֹ בְּלִי? 👂')+`<div class="center"><button class="speak big" data-a="replay" aria-label="השמע שוב">🔊</button></div>`+optBtns(r,'heb');
+  }else if(r.kind==='dfill'){
+    h+=qline('אֵיזוֹ אוֹת חֲסֵרָה? 🔤')+`<div class="emoji">${r.emoji}</div>`;
+    if(canSay(r.key))h+=`<div class="center"><button class="speak" data-a="replay" aria-label="השמע">🔊</button></div>`;
+    h+=`<div class="target heb">${r.units.map((u,i)=>i===r.gap?(S.locked?`<span class="hl">${u}</span>`:'<span class="gap">?</span>'):u).join('')}</div>`+optBtns(r,'heb');
+  }else if(r.kind==='dsound'){
+    h+=qline('אֵיךְ קוֹרְאִים אֶת הָאוֹת הַצְּבוּעָה? 🎯')+`<div class="target heb">${r.units.map((u,i)=>i===r.idx?`<span class="hl">${u}</span>`:u).join('')}</div>`;
+    h+=optBtns(r,'dsnd',o=>{const an=DAGL[r.L][o];return `<div class="dl heb">${r.L+(o==='on'?'ּ':'')}</div><div class="da"><span>${an[1]}</span> <span class="heb">${hiDag(an[0])}</span></div>`});
   }else if(r.kind==='memory'){
     h+=qline('מְצָא זוּגוֹת: מִלָּה וּתְמוּנָה 🃏')+`<p class="note center">צְעָדִים: ${r.moves}</p><div class="mem">${r.cards.map(c=>`<button class="mcard ${c.up||c.done?'up':''} ${c.done?'done':''}" data-a="mem" data-i="${c.i}">${c.up||c.done?`<span class="${c.w?'heb mw':'me'}">${c.w?wtxt(c.t):c.t}</span>`:'❔'}</button>`).join('')}</div>`;
   }
@@ -660,8 +729,8 @@ function finishAct(){
   P.acts=P.acts||{};const k=starKey(S.stage,S.act);P.acts[k]=Math.max(P.acts[k]||0,s);
   S.lastStars=s;S.done=true;save();render();confetti();say('praise',PRAISE[0]);
 }
-const INS={read:'קְרָא אֶת הַמִּלָּה וּבְחַר אֶת הַתְּמוּנָה',spell:'אֵיזוֹ מִלָּה כְּתוּבָה נָכוֹן?',missing:'אֵיזוֹ הֲבָרָה חֲסֵרָה?',sort:'אֵיזוֹ תְּנוּעָה יֵשׁ בַּהֲבָרָה הַצְּבוּעָה?',flash:'קְרָא מַהֵר! הַמִּלָּה תֵּעָלֵם',build:'בְּנֵה אֶת הַמִּלָּה',memory:'מְצָא זוּגוֹת שֶׁל מִלָּה וּתְמוּנָה',match:'מְצָא אֶת אוֹתוֹ הַדָּבָר בְּדִיּוּק'};
-function autoSay(){const r=S.round;if(!r)return;if(r.kind==='listen')setTimeout(()=>say(r.key,r.say),350)}
+const INS={dfill:'אֵיזוֹ אוֹת חֲסֵרָה?',dsound:'אֵיךְ קוֹרְאִים אֶת הָאוֹת הַצְּבוּעָה?',read:'קְרָא אֶת הַמִּלָּה וּבְחַר אֶת הַתְּמוּנָה',spell:'אֵיזוֹ מִלָּה כְּתוּבָה נָכוֹן?',missing:'אֵיזוֹ הֲבָרָה חֲסֵרָה?',sort:'אֵיזוֹ תְּנוּעָה יֵשׁ בַּהֲבָרָה הַצְּבוּעָה?',flash:'קְרָא מַהֵר! הַמִּלָּה תֵּעָלֵם',build:'בְּנֵה אֶת הַמִּלָּה',memory:'מְצָא זוּגוֹת שֶׁל מִלָּה וּתְמוּנָה',match:'מְצָא אֶת אוֹתוֹ הַדָּבָר בְּדִיּוּק'};
+function autoSay(){const r=S.round;if(!r)return;if(r.kind==='listen'||r.kind==='dlisten')setTimeout(()=>say(r.key,r.say),350)}
 function feedback(ok){
   const fb=document.getElementById('fb');if(!fb)return;
   fb.className='feedback heb '+(ok?'good':'try');fb.textContent=ok?rnd(PRAISE):rnd(TRY);
@@ -712,14 +781,14 @@ app.addEventListener('click',e=>{
     if(S.locked)return;
     if(b.dataset.v===r.answer){
       S.locked=true;clearTimeout(flashTimer);
-      if(r.kind==='missing'||r.kind==='flash'){if(r.kind==='flash')r.hidden=false;render();const nb=document.querySelector(`[data-a=pick][data-v="${CSS.escape(r.answer)}"]`);nb&&nb.classList.add('ok')}
+      if(r.kind==='missing'||r.kind==='flash'||r.kind==='dfill'){if(r.kind==='flash')r.hidden=false;render();const nb=document.querySelector(`[data-a=pick][data-v="${CSS.escape(r.answer)}"]`);nb&&nb.classList.add('ok')}
       else b.classList.add('ok');
       feedback(true);
       if(r.word&&r.kind!=='sort')say(wordKey(r.word),r.word);
       advTimer=setTimeout(advance,1200);
     }else{
       wrong(b);
-      if(r.kind==='listen')setTimeout(()=>say(r.key,r.say),500);
+      if(r.kind==='listen'||r.kind==='dlisten')setTimeout(()=>say(r.key,r.say),500);
     }
     return;
   }
