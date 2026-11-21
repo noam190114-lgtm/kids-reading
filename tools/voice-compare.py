@@ -67,7 +67,7 @@ try:
         for i, s in enumerate(SAMPLES):
             try:
                 try:  # our own niqqud is exact; let the engine add the stress
-                    ph = phonemize(s, predict_stress=True)
+                    ph = phonemize(s, predict_stress=True, predict_vocal_shva=True)
                 except TypeError:
                     ph = phonemize(nik.add_diacritics(plain(s)))
                 samples, sr = piper.create(ph, is_phonemes=True)
